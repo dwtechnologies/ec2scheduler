@@ -1,0 +1,160 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: EC2 Scheduler
+
+Parameters:
+  scheduleTag:
+    Type: String
+    Default: Schedule
+    Description: Scheduler definition, hh:mm-hh:mm in UTC format
+
+  scheduleTagDay:
+    Type: String
+    Default: ScheduleDay
+    Description: Day of the week in ISO format: 1 Monday, 7 Sunday, ...
+
+  scheduleTagSuspend:
+    Type: String
+    Default: ScheduleSuspendUntil
+    Description: Suspend the scheduler until...
+
+
+Resources:
+  ec2schedulerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          -
+            Effect: Allow
+            Principal:
+              Service:
+                - "lambda.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - PolicyName: "LambdaRole"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action:
+                  - "ec2:DescribeInstances"
+                  - "ec2:DescribeInstanceStatus"
+                  - "ec2:StartInstances"
+                  - "ec2:StopInstances"
+                  - "ec2:CreateTags"
+                  - "ec2:DeleteTags"
+                  - "ec2:DescribeTags"
+                Resource: "*"
+
+
+  ec2scheduler:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ec2scheduler
+      Handler: index.handler
+      Description: EC2 Scheduler - engine
+      Role: !GetAtt ec2schedulerRole.Arn
+      CodeUri: ./source/scheduler
+      MemorySize: 128
+      Runtime: nodejs8.10
+      Timeout: 60
+      Environment:
+        Variables:
+          scheduleTag: !Ref scheduleTag
+          scheduleTagDay: !Ref scheduleTagDay
+      Events:
+        Timer:
+          Type: Schedule
+          Properties:
+            Schedule: rate(5 minutes)
+
+  ec2schedulerSet:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ec2schedulerSet
+      Handler: index.handler
+      Description: EC2 Scheduler - setter
+      Role: !GetAtt ec2schedulerRole.Arn
+      CodeUri: ./source/scheduler-set
+      MemorySize: 128
+      Runtime: nodejs8.10
+      Timeout: 30
+      Environment:
+        Variables:
+          scheduleTag: !Ref scheduleTag
+          scheduleTagDay: !Ref scheduleTagDay
+
+  ec2schedulerDisable:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ec2schedulerDisable
+      Handler: index.handler
+      Description: EC2 Scheduler - disabler
+      Role: !GetAtt ec2schedulerRole.Arn
+      CodeUri: ./source/scheduler-disable
+      MemorySize: 128
+      Runtime: nodejs8.10
+      Timeout: 30
+      Environment:
+        Variables:
+          scheduleTag: !Ref scheduleTag
+
+  ec2schedulerSuspend:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ec2schedulerSuspend
+      Handler: index.handler
+      Description: EC2 Scheduler - suspender
+      Role: !GetAtt ec2schedulerRole.Arn
+      CodeUri: ./source/scheduler-suspend
+      MemorySize: 128
+      Runtime: nodejs8.10
+      Timeout: 30
+      Environment:
+        Variables:
+          scheduleTag: !Ref scheduleTag
+          scheduleTagSuspend: !Ref scheduleTagSuspend
+
+  ec2schedulerUnsuspend:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ec2schedulerUnsuspend
+      Handler: index.handler
+      Description: EC2 Scheduler - unsuspender
+      Role: !GetAtt ec2schedulerRole.Arn
+      CodeUri: ./source/scheduler-unsuspend
+      MemorySize: 128
+      Runtime: nodejs8.10
+      Timeout: 30
+      Environment:
+        Variables:
+          scheduleTag: !Ref scheduleTag
+          scheduleTagSuspend: !Ref scheduleTagSuspend
+
+  ec2schedulerSuspendMon:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ec2schedulerSuspendMon
+      Handler: index.handler
+      Description: EC2 Scheduler - suspend monitor
+      Role: !GetAtt ec2schedulerRole.Arn
+      CodeUri: ./source/scheduler-suspend-mon
+      MemorySize: 128
+      Runtime: nodejs8.10
+      Timeout: 30
+      Environment:
+        Variables:
+          scheduleTag: !Ref scheduleTag
+          scheduleTagSuspend: !Ref scheduleTagSuspend
+      Events:
+        Timer:
+          Type: Schedule
+          Properties:
+            Schedule: rate(10 minutes)
+
