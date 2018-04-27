@@ -74,6 +74,23 @@ Resources:
           Properties:
             Schedule: rate(5 minutes)
 
+  ec2schedulerStatus:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: ec2schedulerStatus
+      Handler: index.handler
+      Description: EC2 Scheduler - status
+      Role: !GetAtt ec2schedulerRole.Arn
+      CodeUri: ./source/scheduler-status
+      MemorySize: 128
+      Runtime: nodejs8.10
+      Timeout: 30
+      Environment:
+        Variables:
+          scheduleTag: !Ref scheduleTag
+          scheduleTagDay: !Ref scheduleTagDay
+          scheduleTagSuspend: !Ref scheduleTagSuspend
+
   ec2schedulerSet:
     Type: AWS::Serverless::Function
     Properties:
