@@ -50,7 +50,7 @@ Set the scheduler for instanceId (create tag if doesn't exists, modify if it exi
 ```json
 {
 	"instanceId": "i-00e92a5a9cb7eeb4d",
-    "rangeTime": "07:00-19:00"
+	"rangeTime": "07:00-19:00"
 }
 
 {
