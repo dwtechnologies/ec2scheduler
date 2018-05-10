@@ -43,8 +43,6 @@ Scheduler engine, runs every 5 minutes to verify tagged EC2 instances (**Schedul
 
 
 
-
-
 - ##### ec2schedulerSet - (source/scheduler-set)
 
 Set the scheduler for instanceId (create tag if doesn't exists, modify if it exists). Event format:
@@ -64,8 +62,6 @@ Set the scheduler for instanceId (create tag if doesn't exists, modify if it exi
 
 
 
-
-
 - ##### ec2schedulerDisable - (source/scheduler-disable)
 
 Disable scheduler for instanceId. Event format:
@@ -75,8 +71,6 @@ Disable scheduler for instanceId. Event format:
     "instanceId": "i-00e92a5a9cb7eeb4d"
 }
 ```
-
-
 
 
 
@@ -95,8 +89,6 @@ Returns a list of instanceIds and their scheduler settings. Output:
 ```
 
 
-
-
 - ##### ec2schedulerSuspend - (source/scheduler-suspend)
 
 Suspend a scheduler until **ScheduleSuspendUntil** tag. Adds **ScheduleSuspendUntil** tag and comment out **Schedule** tag. Event format:
@@ -110,8 +102,6 @@ Suspend a scheduler until **ScheduleSuspendUntil** tag. Adds **ScheduleSuspendUn
 
 
 
-
-
 - ##### ec2schedulerUnsuspend - (source/scheduler-unsuspend)
 
 Unsuspend a scheduler. Delete **ScheduleSuspendUntil** tag and uncomment **Schedule** tag. Event format:
@@ -121,8 +111,6 @@ Unsuspend a scheduler. Delete **ScheduleSuspendUntil** tag and uncomment **Sched
 	"instanceId": "i-00e92a5a9cb7eeb4d"
 }
 ```
-
-
 
 
 
