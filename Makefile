@@ -32,6 +32,6 @@ deploy:
 			Project=$(PROJECT) \
 			Owner=$(OWNER) \
 		--capabilities CAPABILITY_IAM
-	rm -rf dist
+	rm -rf dist source/*/main source/*/handler.zip
 
 
