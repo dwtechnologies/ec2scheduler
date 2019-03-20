@@ -43,7 +43,7 @@ Scheduler engine, runs every 5 minutes to verify tagged EC2 instances (**Schedul
 
 
 
-- ##### ec2schedulerSet - (source/scheduler-set)
+- ##### ec2scheduler-set - (source/scheduler-set)
 
 Set the scheduler for instanceId (create tag if doesn't exists, modify if it exists). Event format:
 
@@ -62,7 +62,7 @@ Set the scheduler for instanceId (create tag if doesn't exists, modify if it exi
 
 
 
-- ##### ec2schedulerDisable - (source/scheduler-disable)
+- ##### ec2scheduler-disable - (source/scheduler-disable)
 
 Disable scheduler for instanceId. Event format:
 
@@ -74,7 +74,7 @@ Disable scheduler for instanceId. Event format:
 
 
 
-- ##### ec2schedulerStatus - (source/scheduler-status)
+- ##### ec2scheduler-status - (source/scheduler-status)
 
 
 Returns a list of instanceIds and their scheduler settings. Output:
@@ -89,7 +89,7 @@ Returns a list of instanceIds and their scheduler settings. Output:
 ```
 
 
-- ##### ec2schedulerSuspend - (source/scheduler-suspend)
+- ##### ec2scheduler-suspend - (source/scheduler-suspend)
 
 Suspend a scheduler until **ScheduleSuspendUntil** tag. Adds **ScheduleSuspendUntil** tag and comment out **Schedule** tag. Event format:
 
@@ -102,7 +102,7 @@ Suspend a scheduler until **ScheduleSuspendUntil** tag. Adds **ScheduleSuspendUn
 
 
 
-- ##### ec2schedulerUnsuspend - (source/scheduler-unsuspend)
+- ##### ec2scheduler-unsuspend - (source/scheduler-unsuspend)
 
 Unsuspend a scheduler. Delete **ScheduleSuspendUntil** tag and uncomment **Schedule** tag. Event format:
 
@@ -114,7 +114,7 @@ Unsuspend a scheduler. Delete **ScheduleSuspendUntil** tag and uncomment **Sched
 
 
 
-- ##### ec2schedulerSuspendMon - (source/scheduler-suspend-mon)
+- ##### ec2scheduler-suspendmon - (source/scheduler-suspend-mon)
 
 Scheduled function that monitors the **ScheduleSuspendUntil** tag. In case the suspend time is expired, the scheduler is unsuspended.
 
