@@ -67,5 +67,6 @@ func handler(event inputEvent) (string, error) {
 		return "", err
 	}
 
+	log.Printf("scheduler set for instance %s. rangeTime: %s, rangeWeekdays: %s", event.InstanceID, event.RangeTime, event.RangeWeekdays)
 	return fmt.Sprintf("scheduler set for instance %s", event.InstanceID), nil
 }
