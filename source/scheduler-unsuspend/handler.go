@@ -45,7 +45,7 @@ func handler(event inputEvent) (string, error) {
 	for _, tag := range resp.Reservations[0].Instances[0].Tags {
 		// remove suspend tag (scheduleTagSuspend)
 		if *tag.Key == scheduleTagSuspend {
-			err := deleteSuspendTag(client)
+			err := deleteSuspendTag(client, event.InstanceID)
 			if err != nil {
 				log.Printf("unable to remove tag %s", scheduleTagSuspend)
 				return fmt.Sprintf("unable to remove tag %s", scheduleTagSuspend), err
@@ -54,7 +54,7 @@ func handler(event inputEvent) (string, error) {
 
 		// uncomment scheduleTag
 		if *tag.Key == scheduleTag {
-			err := enableScheduleTag(client, ec2.Tag{
+			err := enableScheduleTag(client, event.InstanceID, ec2.Tag{
 				Key:   aws.String(scheduleTag),
 				Value: aws.String(strings.Replace(*tag.Value, "#", "", -1)),
 			})
@@ -69,8 +69,9 @@ func handler(event inputEvent) (string, error) {
 	return fmt.Sprintf("instance %s scheduler unsuspended", event.InstanceID), nil
 }
 
-func deleteSuspendTag(client *ec2.EC2) error {
+func deleteSuspendTag(client *ec2.EC2, instanceID string) error {
 	_, err := client.DeleteTagsRequest(&ec2.DeleteTagsInput{
+		Resources: []string{instanceID},
 		Tags: []ec2.Tag{
 			{
 				Key: aws.String(scheduleTagSuspend),
@@ -84,8 +85,9 @@ func deleteSuspendTag(client *ec2.EC2) error {
 	return nil
 }
 
-func enableScheduleTag(client *ec2.EC2, tag ec2.Tag) error {
+func enableScheduleTag(client *ec2.EC2, instanceID string, tag ec2.Tag) error {
 	_, err := client.CreateTagsRequest(&ec2.CreateTagsInput{
+		Resources: []string{instanceID},
 		Tags: []ec2.Tag{
 			tag,
 		},
