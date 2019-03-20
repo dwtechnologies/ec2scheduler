@@ -11,7 +11,7 @@ Parameters:
   scheduleTagDay:
     Type: String
     Default: ScheduleDay
-    Description: Day of the week in ISO format: 1 Monday, 7 Sunday, ...
+    Description: "Day of the week in ISO format: 1 Monday, 7 Sunday, ..."
 
   scheduleTagSuspend:
     Type: String
@@ -77,19 +77,27 @@ Resources:
   ec2schedulerStatus:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: ec2schedulerStatus
-      Handler: index.handler
+      FunctionName: ec2scheduler-status
+      Handler: main
       Description: EC2 Scheduler - status
-      Role: !GetAtt ec2schedulerRole.Arn
-      CodeUri: ./source/scheduler-status
+      CodeUri: ./source/scheduler-status/handler.zip
       MemorySize: 128
-      Runtime: nodejs8.10
+      Runtime: go1.x
       Timeout: 30
+      Policies:
+        - Statement:
+          - Effect: "Allow"
+            Action:
+              - "ec2:DescribeInstanceStatus"
+              - "ec2:DescribeInstances"
+              - "ec2:DescribeTags"
+            Resource: "*"
       Environment:
         Variables:
-          scheduleTag: !Ref scheduleTag
-          scheduleTagDay: !Ref scheduleTagDay
-          scheduleTagSuspend: !Ref scheduleTagSuspend
+          SCHEDULE_TAG: !Ref scheduleTag
+          SCHEDULE_TAG_DAY: !Ref scheduleTagDay
+          SCHEDULE_TAG_SUSPEND: !Ref scheduleTagSuspend
+          TEAMS_INTEGRATION: true
 
   ec2schedulerSet:
     Type: AWS::Serverless::Function
