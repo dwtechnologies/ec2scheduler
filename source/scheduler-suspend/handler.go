@@ -61,6 +61,8 @@ func handler(event inputEvent) (string, error) {
 			if err != nil {
 				return "", err
 			}
+
+			break
 		}
 
 	}
