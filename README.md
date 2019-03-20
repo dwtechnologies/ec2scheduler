@@ -1,5 +1,5 @@
 # ec2scheduler
-Set of Lambda functions to manage the scheduling of EC2 instances.
+Set of Lambda functions to manage the scheduling of EC2 instances via tags.
 
 
 #### Tags
