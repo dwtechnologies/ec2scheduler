@@ -47,24 +47,28 @@ func handler(event inputEvent) (string, error) {
 	}
 
 	for _, tag := range resp.Reservations[0].Instances[0].Tags {
-		fmt.Printf("%v", tag)
+		if *tag.Key == scheduleTag {
+			if strings.Contains(*tag.Value, "#") {
+				log.Printf("instance scheduler for %s already disabled", event.InstanceID)
+				return fmt.Sprintf("instance scheduler for %s already disabled", event.InstanceID), nil
+			}
 
-		if *tag.Key == scheduleTag && strings.Contains(*tag.Value, "#") {
-			log.Printf("instance scheduler for %s already disabled", event.InstanceID)
-			return fmt.Sprintf("instance scheduler for %s already disabled", event.InstanceID), nil
-		}
-
-		// disable scheduler
-		_, err = client.CreateTagsRequest(&ec2.CreateTagsInput{
-			Resources: []string{event.InstanceID},
-			Tags: []ec2.Tag{
-				{
-					Key:   aws.String(scheduleTag),
-					Value: aws.String(fmt.Sprintf("#%s", *tag.Value)),
+			// disable scheduler
+			_, err = client.CreateTagsRequest(&ec2.CreateTagsInput{
+				Resources: []string{event.InstanceID},
+				Tags: []ec2.Tag{
+					{
+						Key:   aws.String(scheduleTag),
+						Value: aws.String(fmt.Sprintf("#%s", *tag.Value)),
+					},
 				},
-			},
-		}).Send()
+			}).Send()
+			if err != nil {
+				log.Printf("error disabling scheduler for %s: %s", event.InstanceID, err)
+				return "", err
+			}
+		}
 	}
 
-	return fmt.Sprintf("instance scheduler for %s enabled", event.InstanceID), nil
+	return fmt.Sprintf("instance scheduler for %s disabled", event.InstanceID), nil
 }

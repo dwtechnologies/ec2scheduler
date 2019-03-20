@@ -118,17 +118,24 @@ Resources:
   ec2schedulerDisable:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: ec2schedulerDisable
-      Handler: index.handler
+      FunctionName: ec2scheduler-disable
+      Handler: main
       Description: EC2 Scheduler - disabler
-      Role: !GetAtt ec2schedulerRole.Arn
-      CodeUri: ./source/scheduler-disable
+      CodeUri: ./source/scheduler-disable/handler.zip
       MemorySize: 128
-      Runtime: nodejs8.10
+      Runtime: go1.x
       Timeout: 30
+      Policies:
+        - Statement:
+          - Effect: "Allow"
+            Action:
+              - "ec2:CreateTags"
+              - "ec2:DescribeInstances"
+              - "ec2:DescribeTags"
+            Resource: "*"
       Environment:
         Variables:
-          scheduleTag: !Ref scheduleTag
+          SCHEDULE_TAG: !Ref scheduleTag
 
   ec2schedulerSuspend:
     Type: AWS::Serverless::Function

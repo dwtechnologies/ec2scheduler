@@ -13,6 +13,7 @@ deploy: build deploy
 
 build:
 	cd source/scheduler-status; GOOS=linux go build -o main && zip handler.zip main
+	cd source/scheduler-disable; GOOS=linux go build -o main && zip handler.zip main
 	cd source/scheduler && npm install
 	cd source/scheduler-suspend && npm install
 	cd source/scheduler-suspend-mon && npm install
