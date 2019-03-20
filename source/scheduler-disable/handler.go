@@ -70,5 +70,6 @@ func handler(event inputEvent) (string, error) {
 		}
 	}
 
+	log.Printf("instance scheduler for %s disabled", event.InstanceID)
 	return fmt.Sprintf("instance scheduler for %s disabled", event.InstanceID), nil
 }
