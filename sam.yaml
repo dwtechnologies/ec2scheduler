@@ -161,18 +161,24 @@ Resources:
   ec2schedulerUnsuspend:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: ec2schedulerUnsuspend
-      Handler: index.handler
+      FunctionName: ec2scheduler-unsuspend
+      Handler: main
       Description: EC2 Scheduler - unsuspender
-      Role: !GetAtt ec2schedulerRole.Arn
-      CodeUri: ./source/scheduler-unsuspend
+      CodeUri: ./source/scheduler-unsuspend/handler.zip
       MemorySize: 128
-      Runtime: nodejs8.10
+      Runtime: go1.x
       Timeout: 30
+      Policies:
+        - Statement:
+          - Effect: "Allow"
+            Action:
+              - "ec2:CreateTags"
+              - "ec2:DeleteTags"
+            Resource: "*"
       Environment:
         Variables:
-          scheduleTag: !Ref scheduleTag
-          scheduleTagSuspend: !Ref scheduleTagSuspend
+          SCHEDULE_TAG: !Ref scheduleTag
+          SCHEDULE_TAG_SUSPEND: !Ref scheduleTagSuspend
 
   ec2schedulerSuspendMon:
     Type: AWS::Serverless::Function
