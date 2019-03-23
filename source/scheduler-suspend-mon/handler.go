@@ -44,7 +44,7 @@ func handler() error {
 	}
 
 	if len(resp.Reservations) < 1 {
-		log.Printf("no instance found %s", event.InstanceID)
+		log.Printf("no instance found")
 		return "", nil
 	}
 
@@ -54,7 +54,9 @@ func handler() error {
 			tags[*tag.Key] = *tag.Value
 		}
 
+		// check if suspend time is expired
 		if time.Now().After(tags[scheduleTagSuspend]) {
+			// delete suspend tag
 			err := deleteSuspendTag(client, instance.InstanceId)
 			if err != nil {
 				log.Printf("unable to remove tag %s", scheduleTagSuspend)
