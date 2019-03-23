@@ -94,6 +94,7 @@ func handler() error {
 		}
 	}
 
+	log.Printf("done and dusted")
 	return nil
 }
 
