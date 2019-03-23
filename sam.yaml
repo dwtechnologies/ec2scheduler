@@ -191,18 +191,29 @@ Resources:
   ec2schedulerSuspendMon:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: ec2schedulerSuspendMon
-      Handler: index.handler
+      FunctionName: ec2scheduler-suspend-mon
+      Handler: main
       Description: EC2 Scheduler - suspend monitor
-      Role: !GetAtt ec2schedulerRole.Arn
-      CodeUri: ./source/scheduler-suspend-mon
+      CodeUri: ./source/scheduler-suspend-mon/handler.zip
       MemorySize: 128
-      Runtime: nodejs8.10
+      Runtime: go1.x
       Timeout: 30
+      Policies:
+        - Statement:
+          - Effect: "Allow"
+            Action:
+              - "ec2:CreateTags"
+              - "ec2:DeleteTags"
+              - "ec2:DescribeInstanceStatus"
+              - "ec2:DescribeInstances"
+              - "ec2:DescribeTags"
+              - "ec2:StartInstances"
+              - "ec2:StopInstances"
+            Resource: "*"
       Environment:
         Variables:
-          scheduleTag: !Ref scheduleTag
-          scheduleTagSuspend: !Ref scheduleTagSuspend
+          SCHEDULE_TAG: !Ref scheduleTag
+          SCHEDULE_TAG_SUSPEND: !Ref scheduleTagSuspend
       Events:
         Timer:
           Type: Schedule
