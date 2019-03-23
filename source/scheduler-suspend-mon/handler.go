@@ -73,7 +73,7 @@ func handler() error {
 
 		// check if suspend time is expired
 		if time.Now().After(suspendTime) {
-			log.Printf("un-suspending scheduler on instance %s", *instance.InstanceId)
+			log.Printf("suspension tag [%s] expired on instance %s. unsuspending...", tags[scheduleTagSuspend], *instance.InstanceId)
 
 			// delete suspend tag
 			err := deleteSuspendTag(client, *instance.InstanceId)
