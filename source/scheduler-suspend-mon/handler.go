@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -9,12 +8,19 @@ import (
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/external"
+	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 )
 
 var scheduleTag = os.Getenv("SCHEDULE_TAG")
 var scheduleTagSuspend = os.Getenv("SCHEDULE_TAG_SUSPEND")
+var scheduleTagSuspendLayouts = map[int]string{
+	4:  "2006",
+	6:  "200601",
+	8:  "20060102",
+	11: "20060102T15",
+	13: "20060102T15:04",
+}
 
 func main() {
 	lambda.Start(handler)
@@ -23,7 +29,7 @@ func main() {
 func handler() error {
 	cfg, err := external.LoadDefaultAWSConfig()
 	if err != nil {
-		return "", err
+		return err
 	}
 	client := ec2.New(cfg)
 
@@ -40,37 +46,48 @@ func handler() error {
 		},
 	}).Send()
 	if err != nil {
-		return "", err
+		return err
 	}
 
 	if len(resp.Reservations) < 1 {
 		log.Printf("no instance found")
-		return "", nil
+		return nil
 	}
 
 	for _, instance := range resp.Reservations[0].Instances {
 		tags := map[string]string{}
-		for _, tag := range instace.Tags {
+		for _, tag := range instance.Tags {
 			tags[*tag.Key] = *tag.Value
 		}
 
+		// parse suspend time
+		if _, ok := scheduleTagSuspendLayouts[len(tags[scheduleTagSuspend])]; !ok {
+			log.Printf("layout doesn't match any supported one %s", tags[scheduleTagSuspend])
+			break
+		}
+		suspendTime, err := time.Parse(scheduleTagSuspendLayouts[len(tags[scheduleTagSuspend])], tags[scheduleTagSuspend])
+		if err != nil {
+			log.Printf("can't parse date %s", tags[scheduleTagSuspend])
+			break
+		}
+
 		// check if suspend time is expired
-		if time.Now().After(tags[scheduleTagSuspend]) {
+		if time.Now().After(suspendTime) {
 			// delete suspend tag
-			err := deleteSuspendTag(client, instance.InstanceId)
+			err := deleteSuspendTag(client, *instance.InstanceId)
 			if err != nil {
 				log.Printf("unable to remove tag %s", scheduleTagSuspend)
-				return fmt.Sprintf("unable to remove tag %s", scheduleTagSuspend), err
+				return err
 			}
 
 			// uncomment scheduleTag
-			err := enableScheduleTag(client, event.InstanceID, ec2.Tag{
+			err = enableScheduleTag(client, *instance.InstanceId, ec2.Tag{
 				Key:   aws.String(scheduleTag),
 				Value: aws.String(strings.Replace(tags[scheduleTag], "#", "", -1)),
 			})
 			if err != nil {
 				log.Printf("unable to uncomment tag %s", scheduleTag)
-				return fmt.Sprintf("unable to uncomment tag %s", scheduleTag), err
+				return err
 			}
 		}
 	}
