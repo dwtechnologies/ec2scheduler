@@ -50,10 +50,12 @@ Set the scheduler for instanceId (create tag if doesn't exists, modify if it exi
 
 ```json
 {
-	"instanceId": "i-00e92a5a9cb7eeb4d",
-	"rangeTime": "07:00-19:00"
+    "instanceId": "i-00e92a5a9cb7eeb4d",
+    "rangeTime": "07:00-19:00"
 }
+```
 
+```json
 {
     "instanceId": "i-00e92a5a9cb7eeb4d",
     "rangeTime": "07:00-19:00",
@@ -96,8 +98,8 @@ Suspend a scheduler until **ScheduleSuspendUntil** tag. Adds **ScheduleSuspendUn
 
 ```json
 {
-	"instanceId": "i-00e92a5a9cb7eeb4d",
-	"unsuspendDatetime": "20171117"
+    "instanceId": "i-00e92a5a9cb7eeb4d",
+    "unsuspendDatetime": "20171117"
 }
 ```
 
@@ -109,7 +111,7 @@ Unsuspend a scheduler. Delete **ScheduleSuspendUntil** tag and uncomment **Sched
 
 ```json
 {
-	"instanceId": "i-00e92a5a9cb7eeb4d"
+     "instanceId": "i-00e92a5a9cb7eeb4d"
 }
 ```
 
