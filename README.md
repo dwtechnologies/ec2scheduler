@@ -25,13 +25,14 @@ parameters and are exposed to the functions as environment variables.
 ```
 
 
-- **ScheduleSuspendUntil**: handle by the ec2schedulerSuspend/Unsuspend/SuspendMon functions
-
+- **ScheduleSuspendUntil**: handle by the ec2schedulerSuspend/Unsuspend/SuspendMon functions. Supported time formats:
 ```
-  2020                  suspend the scheduler until Jan 1 2020 00:00:00
-  20180816T13:00        suspend the scheduler until Aug 16 2018 13:00:00
+2006
+200601
+20060102
+20060102T15
+20060102T15:04
 ```
-
 
 
 #### Functions

@@ -85,11 +85,11 @@ func deleteSuspendTag(client *ec2.EC2, instanceID string) error {
 	return nil
 }
 
-func enableScheduleTag(client *ec2.EC2, instanceID string, tag ec2.Tag) error {
+func enableScheduleTag(client *ec2.EC2, instanceID string, scheduleTag ec2.Tag) error {
 	_, err := client.CreateTagsRequest(&ec2.CreateTagsInput{
 		Resources: []string{instanceID},
 		Tags: []ec2.Tag{
-			tag,
+			scheduleTag,
 		},
 	}).Send()
 	if err != nil {
