@@ -25,7 +25,7 @@ parameters and are exposed to the functions as environment variables.
 ```
 
 
-- **ScheduleSuspendUntil**: handle by the ec2schedulerSuspend/Unsuspend/SuspendMon functions. Supported time formats:
+- **ScheduleSuspendUntil**: handle by the ec2schedulerSuspend/Unsuspend/SuspendMon functions. Supported time layouts:
 ```
 2006
 200601
