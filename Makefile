@@ -1,6 +1,6 @@
 
 ENVIRONMENT  ?= prod
-AWS_REGION   ?=
+AWS_REGION   ?= eu-west-1
 AWS_PROFILE  ?=
 PROJECT      ?= itops
 OWNER        ?= cloudops
