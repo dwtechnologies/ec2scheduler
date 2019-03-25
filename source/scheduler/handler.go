@@ -13,14 +13,18 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/ec2iface"
+	"github.com/aws/aws-sdk-go-v2/service/sns"
+	"github.com/aws/aws-sdk-go-v2/service/sns/snsiface"
 )
 
 var scheduleTag = os.Getenv("SCHEDULE_TAG")
 var scheduleTagDay = os.Getenv("SCHEDULE_TAG_DAY")
+var scheduleTagSNS = os.Getenv("SCHEDULE_TAG_SNS")
 
 type scheduler struct {
 	instanceID    string
 	instanceState ec2.InstanceStateName
+	snsTopicArn   string
 	startTime     time.Time
 	stopTime      time.Time
 	weekdays      []time.Weekday
@@ -75,6 +79,11 @@ func handler() error {
 				break
 			}
 
+			// SNS topic Arn
+			if *tag.Key == scheduleTagSNS {
+				s.snsTopicArn = *tag.Value
+			}
+
 			// get start and stop time from scheduleTag
 			if *tag.Key == scheduleTag {
 				startStopTime := strings.Split(*tag.Value, "-")
@@ -101,9 +110,21 @@ func handler() error {
 
 		// get instance expected state (running, stopped)
 		expectedState := s.shouldRun(time.Now(), time.Date(0000, 01, 01, time.Now().Hour(), time.Now().Minute(), 00, 00, time.UTC))
-		err := s.fixInstanceState(client, expectedState)
+		stateChange, err := s.fixInstanceState(client, expectedState)
 		if err != nil {
 			log.Printf("[%s] unable to change state", s.instanceID)
+		}
+
+		// publish state changes to SNS topic
+		if s.snsTopicArn != "" && stateChange != "" {
+			client := sns.New(cfg)
+
+			err := s.publishStateChange(client, stateChange)
+			if err != nil {
+				log.Printf("[%s] unable to notify %s of state change: %s", s.instanceID, s.snsTopicArn, err)
+			}
+
+			log.Printf("[%s] notify %s of state change", s.instanceID, s.snsTopicArn)
 		}
 	}
 
@@ -167,10 +188,11 @@ func (s *scheduler) shouldRunDay(weekday time.Weekday) bool {
 }
 
 // fix instance state - start or stop
-func (s *scheduler) fixInstanceState(client ec2iface.EC2API, expectedState ec2.InstanceStateName) error {
+// return instance state and a possible error
+func (s *scheduler) fixInstanceState(client ec2iface.EC2API, expectedState ec2.InstanceStateName) (ec2.InstanceStateName, error) {
 	if s.instanceState == expectedState {
 		log.Printf("[%s] nothing to do", s.instanceID)
-		return nil
+		return "", nil
 	}
 
 	if expectedState == ec2.InstanceStateNameRunning {
@@ -178,10 +200,11 @@ func (s *scheduler) fixInstanceState(client ec2iface.EC2API, expectedState ec2.I
 			InstanceIds: []string{s.instanceID},
 		}).Send()
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		log.Printf("[%s] state changed to %s", s.instanceID, ec2.InstanceStateNameRunning)
+		return ec2.InstanceStateNameRunning, nil
 	}
 
 	if expectedState == ec2.InstanceStateNameStopped {
@@ -189,10 +212,23 @@ func (s *scheduler) fixInstanceState(client ec2iface.EC2API, expectedState ec2.I
 			InstanceIds: []string{s.instanceID},
 		}).Send()
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		log.Printf("[%s] state changed to %s", s.instanceID, ec2.InstanceStateNameStopped)
+		return ec2.InstanceStateNameStopped, nil
+	}
+
+	return "", nil
+}
+
+func (s *scheduler) publishStateChange(client snsiface.SNSAPI, stateChange ec2.InstanceStateName) error {
+	_, err := client.PublishRequest(&sns.PublishInput{
+		Message:  aws.String(fmt.Sprintf("%s %s", s.instanceID, stateChange)),
+		TopicArn: aws.String(s.snsTopicArn),
+	}).Send()
+	if err != nil {
+		return err
 	}
 
 	return nil
