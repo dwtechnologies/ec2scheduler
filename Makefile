@@ -1,5 +1,5 @@
 
-ENVIRONMENT  ?= dev
+ENVIRONMENT  ?= prod
 AWS_REGION   ?=
 AWS_PROFILE  ?=
 PROJECT      ?= itops
