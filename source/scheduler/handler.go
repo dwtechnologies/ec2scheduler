@@ -71,7 +71,7 @@ func handler() error {
 		for _, tag := range instance.Tags {
 			// scheduler disabled
 			if *tag.Key == scheduleTag && strings.Contains(*tag.Value, "#") {
-				log.Printf("scheduler is disabled for instanceId %s", s.instanceID)
+				log.Printf("[%s] scheduler is disabled", s.instanceID)
 				break
 			}
 
@@ -80,12 +80,12 @@ func handler() error {
 				startStopTime := strings.Split(*tag.Value, "-")
 				s.startTime, err = time.Parse("15:04", startStopTime[0])
 				if err != nil {
-					log.Printf("instance %s scheduler start time in wrong format %s: %s", s.instanceID, startStopTime[0], err)
+					log.Printf("[%s] scheduler start time in wrong format %s: %s", s.instanceID, startStopTime[0], err)
 					break
 				}
 				s.stopTime, err = time.Parse("15:04", startStopTime[1])
 				if err != nil {
-					log.Printf("instance %s scheduler stop time in wrong format %s: %s", s.instanceID, startStopTime[1], err)
+					log.Printf("[%s] scheduler stop time in wrong format %s: %s", s.instanceID, startStopTime[1], err)
 					break
 				}
 			}
@@ -94,7 +94,7 @@ func handler() error {
 			if *tag.Key == scheduleTagDay {
 				err := json.Unmarshal([]byte(fmt.Sprintf("[%s]", *tag.Value)), &s.weekdays)
 				if err != nil {
-					log.Printf("unable to unmarshal %s: %s", scheduleTagDay, *tag.Value)
+					log.Printf("[%s] unable to unmarshal %s: %s", s.instanceID, scheduleTagDay, *tag.Value)
 				}
 			}
 		}
@@ -103,7 +103,7 @@ func handler() error {
 		expectedState := s.shouldRun(time.Now(), time.Date(0000, 01, 01, time.Now().Hour(), time.Now().Minute(), 00, 00, time.UTC))
 		err := s.fixInstanceState(client, expectedState)
 		if err != nil {
-			log.Printf("unable to change state for instance %s", s.instanceID)
+			log.Printf("[%s] unable to change state", s.instanceID)
 		}
 	}
 
@@ -115,16 +115,16 @@ func handler() error {
 // timeNow contains information regarding current time (null value for YYYY, mm, dd)
 func (s *scheduler) shouldRun(dateNow, timeNow time.Time) ec2.InstanceStateName {
 	// should not run today
-	log.Printf("weekday: %s", dateNow.Weekday())
+	log.Printf("[%s] weekday: %s", s.instanceID, dateNow.Weekday())
 	if !s.shouldRunDay(dateNow.Weekday()) {
-		log.Printf("%s should run today: false", s.instanceID)
+		log.Printf("[%s] should run today: false", s.instanceID)
 		return ec2.InstanceStateNameStopped
 	}
 
 	// logging
-	log.Printf("time now: %d:%d", timeNow.Hour(), timeNow.Minute())
-	log.Printf("%s start time: %s", s.instanceID, s.startTime)
-	log.Printf("%s stop time: %s", s.instanceID, s.stopTime)
+	log.Printf("[%s] time now: %d:%d", s.instanceID, timeNow.Hour(), timeNow.Minute())
+	log.Printf("[%s] start time: %s", s.instanceID, s.startTime)
+	log.Printf("[%s] stop time: %s", s.instanceID, s.stopTime)
 
 	// startTime-stopTime same day (07:00-19:30)
 	if s.startTime.Before(s.stopTime) {
@@ -180,7 +180,7 @@ func (s *scheduler) fixInstanceState(client ec2iface.EC2API, expectedState ec2.I
 			return err
 		}
 
-		log.Printf("instance %s state changed to %s", s.instanceID, ec2.InstanceStateNameRunning)
+		log.Printf("[%s] state changed to %s", s.instanceID, ec2.InstanceStateNameRunning)
 	}
 
 	if expectedState == ec2.InstanceStateNameStopped {
@@ -191,7 +191,7 @@ func (s *scheduler) fixInstanceState(client ec2iface.EC2API, expectedState ec2.I
 			return err
 		}
 
-		log.Printf("instance %s state changed to %s", s.instanceID, ec2.InstanceStateNameStopped)
+		log.Printf("[%s] state changed to %s", s.instanceID, ec2.InstanceStateNameStopped)
 	}
 
 	return nil
