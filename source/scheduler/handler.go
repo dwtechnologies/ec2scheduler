@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2iface"
 )
 
 var scheduleTag = os.Getenv("SCHEDULE_TAG")
@@ -95,7 +96,11 @@ func handler() error {
 			}
 		}
 
-		// shouldRun(time.Now(), )
+		expectedState := s.shouldRun(time.Now(), time.Date(0000, 01, 01, time.Now().Hour(), time.Now().Minute(), 00, 00, time.UTC))
+		err := s.fixInstanceState(client, expectedState)
+		if err != nil {
+			log.Printf("can't change state for instance %s", s.instanceID)
+		}
 	}
 
 	return nil
@@ -155,7 +160,7 @@ func (s *scheduler) shouldRunDay(weekday time.Weekday) bool {
 	return false
 }
 
-func (s *scheduler) fixInstanceState(client *ec2.EC2, expectedState ec2.InstanceStateName) error {
+func (s *scheduler) fixInstanceState(client *ec2iface.EC2API, expectedState ec2.InstanceStateName) error {
 	if s.instanceState == expectedState {
 		return nil
 	}
