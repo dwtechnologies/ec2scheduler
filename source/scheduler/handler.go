@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"strings"
@@ -89,7 +90,7 @@ func handler() error {
 			}
 
 			if *tag.Key == scheduleTagDay {
-				err := json.Unmarshal([]byte(*tag.Value), &s.weekdays)
+				err := json.Unmarshal([]byte(fmt.Sprintf("[%s]", *tag.Value)), &s.weekdays)
 				if err != nil {
 					log.Printf("unable to unmarshal %s: %s", scheduleTagDay, *tag.Value)
 				}
@@ -175,6 +176,8 @@ func (s *scheduler) fixInstanceState(client ec2iface.EC2API, expectedState ec2.I
 		if err != nil {
 			return err
 		}
+
+		log.Printf("instance %s state changed to %s", s.instanceID, ec2.InstanceStateNameRunning)
 	}
 
 	if expectedState == ec2.InstanceStateNameStopped {
@@ -184,6 +187,8 @@ func (s *scheduler) fixInstanceState(client ec2iface.EC2API, expectedState ec2.I
 		if err != nil {
 			return err
 		}
+
+		log.Printf("instance %s state changed to %s", s.instanceID, ec2.InstanceStateNameStopped)
 	}
 
 	return nil
