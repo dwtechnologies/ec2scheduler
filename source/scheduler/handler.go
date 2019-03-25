@@ -113,6 +113,7 @@ func handler() error {
 		stateChange, err := s.fixInstanceState(client, expectedState)
 		if err != nil {
 			log.Printf("[%s] unable to change state", s.instanceID)
+			break
 		}
 
 		// publish state changes to SNS topic
@@ -135,17 +136,17 @@ func handler() error {
 // dateNow contains information regarding current date and time
 // timeNow contains information regarding current time (null value for YYYY, mm, dd)
 func (s *scheduler) shouldRun(dateNow, timeNow time.Time) ec2.InstanceStateName {
-	// should not run today
-	log.Printf("[%s] weekday: %s", s.instanceID, dateNow.Weekday())
-	if !s.shouldRunDay(dateNow.Weekday()) {
-		log.Printf("[%s] should run today: false", s.instanceID)
-		return ec2.InstanceStateNameStopped
-	}
-
 	// logging
 	log.Printf("[%s] time now: %d:%d", s.instanceID, timeNow.Hour(), timeNow.Minute())
-	log.Printf("[%s] start time: %s", s.instanceID, s.startTime)
-	log.Printf("[%s] stop time: %s", s.instanceID, s.stopTime)
+	log.Printf("[%s] weekday: %s", s.instanceID, dateNow.Weekday())
+	log.Printf("[%s] start time: %d:%d", s.instanceID, s.startTime.Hour(), s.startTime.Minute())
+	log.Printf("[%s] stop time: %d:%d", s.instanceID, s.stopTime.Hour(), s.stopTime.Minute())
+
+	// should not run today
+	if !s.shouldRunDay(dateNow.Weekday()) {
+		log.Printf("[%s] should not run on %s", s.instanceID, dateNow.Weekday())
+		return ec2.InstanceStateNameStopped
+	}
 
 	// startTime-stopTime same day (07:00-19:30)
 	if s.startTime.Before(s.stopTime) {
