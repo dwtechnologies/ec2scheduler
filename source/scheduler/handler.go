@@ -169,6 +169,7 @@ func (s *scheduler) shouldRunDay(weekday time.Weekday) bool {
 // fix instance state - start or stop
 func (s *scheduler) fixInstanceState(client ec2iface.EC2API, expectedState ec2.InstanceStateName) error {
 	if s.instanceState == expectedState {
+		log.Printf("[%s] nothing to do", s.instanceID)
 		return nil
 	}
 
