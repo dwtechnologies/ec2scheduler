@@ -250,7 +250,7 @@ func TestFixInstanceState(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := test.s.fixInstanceState(test.awsClient, test.expectedState)
+			_, err := test.s.fixInstanceState(test.awsClient, test.expectedState)
 			if test.err {
 				assert.Error(t, err)
 				return
