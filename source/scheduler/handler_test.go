@@ -111,17 +111,16 @@ func TestShouldRun(t *testing.T) {
 				startTime:  time.Date(0000, 01, 01, 19, 00, 00, 00, time.UTC),
 				stopTime:   time.Date(0000, 01, 01, 7, 30, 00, 00, time.UTC),
 			},
-			now: time.Date(0000, 01, 01, 8, 00, 00, 00, time.UTC).Format("15:04"),
-			// now:  time.Date(0000, 01, 01, 8, 00, 00, 00, time.UTC),
+			now:  time.Date(0000, 01, 01, 8, 00, 00, 00, time.UTC),
 			want: ec2.InstanceStateNameStopped,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			now, _ := time.Parse("15:04", test.now)
-			fmt.Printf("NOW: %s\n", now)
-			got := test.s.shouldRun(now)
+			// now, _ := time.Parse("15:04", test.now)
+			// fmt.Printf("NOW: %s\n", now)
+			got := test.s.shouldRun(test.now)
 
 			fmt.Printf("%s\n", got)
 			assert.Equalf(t, test.want, got, "instance state received: %s\n", got)
