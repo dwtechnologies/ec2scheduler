@@ -40,7 +40,6 @@ Resources:
               - "ec2:StartInstances"
               - "ec2:StopInstances"
             Resource: "*"
- 
       Environment:
         Variables:
           SCHEDULE_TAG: !Ref scheduleTag
