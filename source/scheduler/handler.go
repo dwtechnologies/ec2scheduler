@@ -91,7 +91,7 @@ func handler() error {
 			if *tag.Key == scheduleTagDay {
 				err := json.Unmarshal([]byte(*tag.Value), &s.weekdays)
 				if err != nil {
-					return err
+					log.Printf("unable to unmarshal %s: %s", scheduleTagDay, *tag.Value)
 				}
 			}
 		}
@@ -99,7 +99,7 @@ func handler() error {
 		expectedState := s.shouldRun(time.Now(), time.Date(0000, 01, 01, time.Now().Hour(), time.Now().Minute(), 00, 00, time.UTC))
 		err := s.fixInstanceState(client, expectedState)
 		if err != nil {
-			log.Printf("can't change state for instance %s", s.instanceID)
+			log.Printf("unable to change state for instance %s", s.instanceID)
 		}
 	}
 
@@ -132,9 +132,11 @@ func (s *scheduler) shouldRun(dateNow, timeNow time.Time) ec2.InstanceStateName 
 	}
 
 	// startTime-stopTime between days (22:00-03:00 = 22:00-23:59,00:00-03:00)
+	// startTime-midnight
 	if timeNow.After(s.startTime) && timeNow.Before(time.Date(0000, 01, 01, 23, 59, 00, 00, time.UTC)) {
 		return ec2.InstanceStateNameRunning
 	}
+	// midnight-stopTime
 	if timeNow.After(time.Date(0000, 01, 01, 00, 00, 00, 00, time.UTC)) && timeNow.Before(s.stopTime) {
 		return ec2.InstanceStateNameRunning
 	}
@@ -160,6 +162,7 @@ func (s *scheduler) shouldRunDay(weekday time.Weekday) bool {
 	return false
 }
 
+// fix instance state - start or stop
 func (s *scheduler) fixInstanceState(client ec2iface.EC2API, expectedState ec2.InstanceStateName) error {
 	if s.instanceState == expectedState {
 		return nil
