@@ -75,6 +75,7 @@ func handler() error {
 				break
 			}
 
+			// get start and stop time from scheduleTag
 			if *tag.Key == scheduleTag {
 				startStopTime := strings.Split(*tag.Value, "-")
 				s.startTime, err = time.Parse("15:04", startStopTime[0])
@@ -89,6 +90,7 @@ func handler() error {
 				}
 			}
 
+			// get week days from scheduleTagDay
 			if *tag.Key == scheduleTagDay {
 				err := json.Unmarshal([]byte(fmt.Sprintf("[%s]", *tag.Value)), &s.weekdays)
 				if err != nil {
@@ -97,6 +99,7 @@ func handler() error {
 			}
 		}
 
+		// get instance expected state (running, stopped)
 		expectedState := s.shouldRun(time.Now(), time.Date(0000, 01, 01, time.Now().Hour(), time.Now().Minute(), 00, 00, time.UTC))
 		err := s.fixInstanceState(client, expectedState)
 		if err != nil {
@@ -118,7 +121,7 @@ func (s *scheduler) shouldRun(dateNow, timeNow time.Time) ec2.InstanceStateName 
 		return ec2.InstanceStateNameStopped
 	}
 
-	// debugging
+	// logging
 	log.Printf("time now: %d:%d", timeNow.Hour(), timeNow.Minute())
 	log.Printf("%s start time: %s", s.instanceID, s.startTime)
 	log.Printf("%s stop time: %s", s.instanceID, s.stopTime)
