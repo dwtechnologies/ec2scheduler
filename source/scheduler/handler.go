@@ -119,7 +119,7 @@ func (s *scheduler) shouldRun(dateNow, timeNow time.Time) ec2.InstanceStateName 
 	}
 
 	// debugging
-	log.Printf("time now: %s", timeNow)
+	log.Printf("time now: %d:%d", timeNow.Hour(), timeNow.Minute())
 	log.Printf("%s start time: %s", s.instanceID, s.startTime)
 	log.Printf("%s stop time: %s", s.instanceID, s.stopTime)
 
