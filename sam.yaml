@@ -20,54 +20,30 @@ Parameters:
 
 
 Resources:
-  ec2schedulerRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: "2012-10-17"
-        Statement:
-          -
-            Effect: Allow
-            Principal:
-              Service:
-                - "lambda.amazonaws.com"
-            Action:
-              - "sts:AssumeRole"
-      Path: "/"
-      ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
-      Policies:
-        - PolicyName: "LambdaRole"
-          PolicyDocument:
-            Version: "2012-10-17"
-            Statement:
-              - Effect: "Allow"
-                Action:
-                  - "ec2:DescribeInstances"
-                  - "ec2:DescribeInstanceStatus"
-                  - "ec2:StartInstances"
-                  - "ec2:StopInstances"
-                  - "ec2:CreateTags"
-                  - "ec2:DeleteTags"
-                  - "ec2:DescribeTags"
-                Resource: "*"
-
-
   ec2scheduler:
     Type: AWS::Serverless::Function
     Properties:
       FunctionName: ec2scheduler
-      Handler: index.handler
+      Handler: main
       Description: EC2 Scheduler - engine
-      Role: !GetAtt ec2schedulerRole.Arn
-      CodeUri: ./source/scheduler
+      CodeUri: ./source/scheduler/handler.zip
       MemorySize: 128
-      Runtime: nodejs8.10
+      Runtime: go1.x
       Timeout: 60
+      Policies:
+        - Statement:
+          - Effect: "Allow"
+            Action:
+              - "ec2:DescribeInstanceStatus"
+              - "ec2:DescribeInstances"
+              - "ec2:DescribeTags"
+              - "ec2:StartInstances"
+              - "ec2:StopInstances"
+            Resource: "*"
       Environment:
         Variables:
-          scheduleTag: !Ref scheduleTag
-          scheduleTagDay: !Ref scheduleTagDay
+          SCHEDULE_TAG: !Ref scheduleTag
+          SCHEDULE_TAG_DAY: !Ref scheduleTagDay
       Events:
         Timer:
           Type: Schedule
