@@ -34,6 +34,10 @@ parameters and are exposed to the functions as environment variables.
 20060102T15:04
 ```
 
+- **ScheduleSNS**: set to SNS topic Arn if you want to send notification of state change:
+```
+arn:aws:sns:eu-west-1:103145239510:my-topic
+```
 
 #### Functions
 
