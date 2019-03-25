@@ -11,7 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/aws/aws-sdk-go-v2/service/ec2iface"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/ec2iface"
 )
 
 var scheduleTag = os.Getenv("SCHEDULE_TAG")
@@ -160,7 +160,7 @@ func (s *scheduler) shouldRunDay(weekday time.Weekday) bool {
 	return false
 }
 
-func (s *scheduler) fixInstanceState(client *ec2iface.EC2API, expectedState ec2.InstanceStateName) error {
+func (s *scheduler) fixInstanceState(client ec2iface.EC2API, expectedState ec2.InstanceStateName) error {
 	if s.instanceState == expectedState {
 		return nil
 	}
