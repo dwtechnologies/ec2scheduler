@@ -18,7 +18,7 @@ build:
 	cd source/scheduler-suspend; GOOS=linux go build -o main && zip handler.zip main
 	cd source/scheduler-unsuspend; GOOS=linux go build -o main && zip handler.zip main
 	cd source/scheduler-suspend-mon; GOOS=linux go build -o main && zip handler.zip main
-	cd source/scheduler; GOOS=linux go build -o main && zip handler.zip main
+	cd source/scheduler; go test -v -cover && GOOS=linux go build -o main && zip handler.zip main
 	mkdir -p dist
 	aws cloudformation package \
 		--template-file sam.yaml \
