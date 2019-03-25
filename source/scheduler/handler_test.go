@@ -75,13 +75,23 @@ func TestShouldRun(t *testing.T) {
 		want ec2.InstanceStateName
 	}{
 		{
-			name: "startTime:stopTime same day",
+			name: "weekend",
 			s: &scheduler{
 				instanceID: "i-07d023c826d243165",
 				startTime:  time.Date(0000, 01, 01, 8, 00, 00, 00, time.UTC),
 				stopTime:   time.Date(0000, 01, 01, 19, 00, 00, 00, time.UTC),
 			},
-			now:  time.Date(0000, 01, 01, 10, 00, 00, 00, time.UTC),
+			now:  time.Date(2019, 01, 06, 00, 00, 00, 00, time.UTC), // Sunday
+			want: ec2.InstanceStateNameStopped,
+		},
+		{
+			name: "startTime:stopTime same day",
+			s: &scheduler{
+				instanceID: "i-07d023c826d243165",
+				startTime:  time.Date(0000, 01, 03, 8, 00, 00, 00, time.UTC),
+				stopTime:   time.Date(0000, 01, 03, 19, 00, 00, 00, time.UTC),
+			},
+			now:  time.Date(0000, 01, 03, 10, 00, 00, 00, time.UTC),
 			want: ec2.InstanceStateNameRunning,
 		},
 		{
@@ -91,7 +101,7 @@ func TestShouldRun(t *testing.T) {
 				startTime:  time.Date(0000, 01, 01, 8, 00, 00, 00, time.UTC),
 				stopTime:   time.Date(0000, 01, 01, 19, 00, 00, 00, time.UTC),
 			},
-			now:  time.Date(0000, 01, 01, 20, 00, 00, 00, time.UTC),
+			now:  time.Date(0000, 01, 03, 20, 00, 00, 00, time.UTC),
 			want: ec2.InstanceStateNameStopped,
 		},
 		{
@@ -101,7 +111,7 @@ func TestShouldRun(t *testing.T) {
 				startTime:  time.Date(0000, 01, 01, 19, 00, 00, 00, time.UTC),
 				stopTime:   time.Date(0000, 01, 01, 7, 30, 00, 00, time.UTC),
 			},
-			now:  time.Date(0000, 01, 01, 3, 00, 00, 00, time.UTC),
+			now:  time.Date(0000, 01, 03, 3, 00, 00, 00, time.UTC),
 			want: ec2.InstanceStateNameRunning,
 		},
 		{
@@ -111,15 +121,13 @@ func TestShouldRun(t *testing.T) {
 				startTime:  time.Date(0000, 01, 01, 19, 00, 00, 00, time.UTC),
 				stopTime:   time.Date(0000, 01, 01, 7, 30, 00, 00, time.UTC),
 			},
-			now:  time.Date(0000, 01, 01, 8, 00, 00, 00, time.UTC),
+			now:  time.Date(0000, 01, 03, 8, 00, 00, 00, time.UTC),
 			want: ec2.InstanceStateNameStopped,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			// now, _ := time.Parse("15:04", test.now)
-			// fmt.Printf("NOW: %s\n", now)
 			got := test.s.shouldRun(test.now)
 
 			fmt.Printf("%s\n", got)
