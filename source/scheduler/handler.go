@@ -69,14 +69,22 @@ func handler() error {
 		for _, tag := range instance.Tags {
 			// scheduler disabled
 			if *tag.Key == scheduleTag && strings.Contains(*tag.Value, "#") {
-				log.Printf("scheduler is disabled for instanceId %s", *instance.InstanceId)
+				log.Printf("scheduler is disabled for instanceId %s", s.instanceID)
 				break
 			}
 
 			if *tag.Key == scheduleTag {
 				startStopTime := strings.Split(*tag.Value, "-")
-				s.startTime, _ = time.Parse("15:04", startStopTime[0])
-				s.stopTime, _ = time.Parse("15:04", startStopTime[1])
+				s.startTime, err = time.Parse("15:04", startStopTime[0])
+				if err != nil {
+					log.Printf("instance %s scheduler start time in wrong format %s: %s", s.instanceID, startStopTime[0], err)
+					break
+				}
+				s.stopTime, err = time.Parse("15:04", startStopTime[1])
+				if err != nil {
+					log.Printf("instance %s scheduler stop time in wrong format %s: %s", s.instanceID, startStopTime[1], err)
+					break
+				}
 			}
 
 			if *tag.Key == scheduleTagDay {
@@ -86,6 +94,8 @@ func handler() error {
 				}
 			}
 		}
+
+		// shouldRun(time.Now(), )
 	}
 
 	return nil
@@ -143,4 +153,30 @@ func (s *scheduler) shouldRunDay(weekday time.Weekday) bool {
 	}
 
 	return false
+}
+
+func (s *scheduler) fixInstanceState(client *ec2.EC2, expectedState ec2.InstanceStateName) error {
+	if s.instanceState == expectedState {
+		return nil
+	}
+
+	if expectedState == ec2.InstanceStateNameRunning {
+		_, err := client.StartInstancesRequest(&ec2.StartInstancesInput{
+			InstanceIds: []string{s.instanceID},
+		}).Send()
+		if err != nil {
+			return err
+		}
+	}
+
+	if expectedState == ec2.InstanceStateNameStopped {
+		_, err := client.StopInstancesRequest(&ec2.StopInstancesInput{
+			InstanceIds: []string{s.instanceID},
+		}).Send()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
