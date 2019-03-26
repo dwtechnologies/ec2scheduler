@@ -14,10 +14,11 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/ec2iface"
 )
 
 type inputEvent struct {
-	InstanceID string
+	InstanceID string `json:"instanceId"`
 }
 
 var scheduleTag = os.Getenv("SCHEDULE_TAG")
@@ -42,34 +43,43 @@ func handler(event inputEvent) (string, error) {
 	}
 
 	if len(resp.Reservations) < 1 {
-		log.Printf("no instance with ID %s", event.InstanceID)
+		log.Printf("[%s] no instance found", event.InstanceID)
 		return "", nil
 	}
 
 	for _, tag := range resp.Reservations[0].Instances[0].Tags {
 		if *tag.Key == scheduleTag {
 			if strings.Contains(*tag.Value, "#") {
-				log.Printf("instance scheduler for %s already disabled", event.InstanceID)
+				log.Printf("[%s] instance scheduler already disabled", event.InstanceID)
 				return fmt.Sprintf("instance scheduler for %s already disabled", event.InstanceID), nil
 			}
 
 			// disable scheduler
-			_, err = client.CreateTagsRequest(&ec2.CreateTagsInput{
-				Resources: []string{event.InstanceID},
-				Tags: []ec2.Tag{
-					{
-						Key:   aws.String(scheduleTag),
-						Value: aws.String(fmt.Sprintf("#%s", *tag.Value)),
-					},
-				},
-			}).Send()
+			err := disableScheduler(client, event.InstanceID, *tag.Value)
 			if err != nil {
-				log.Printf("error disabling scheduler for %s: %s", event.InstanceID, err)
+				log.Printf("[%s] error disabling scheduler: %s", event.InstanceID, err)
 				return "", err
 			}
 		}
 	}
 
-	log.Printf("instance scheduler for %s disabled", event.InstanceID)
+	log.Printf("[%s] instance scheduler disabled", event.InstanceID)
 	return fmt.Sprintf("instance scheduler for %s disabled", event.InstanceID), nil
+}
+
+func disableScheduler(client ec2iface.EC2API, instanceID, scheduleTag string) error {
+	_, err := client.CreateTagsRequest(&ec2.CreateTagsInput{
+		Resources: []string{instanceID},
+		Tags: []ec2.Tag{
+			{
+				Key:   aws.String(scheduleTag),
+				Value: aws.String(fmt.Sprintf("#%s", scheduleTag)),
+			},
+		},
+	}).Send()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
