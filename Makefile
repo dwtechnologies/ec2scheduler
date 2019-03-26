@@ -12,7 +12,7 @@ S3_BUCKET    ?=
 deploy: build deploy
 
 build:
-	cd source/scheduler-disable; GOOS=linux go build -o main && zip handler.zip main
+	cd source/scheduler-disable; go test -v -cover && GOOS=linux go build -o main && zip handler.zip main
 	cd source/scheduler-set; GOOS=linux go build -o main && zip handler.zip main
 	cd source/scheduler-status; GOOS=linux go build -o main && zip handler.zip main
 	cd source/scheduler-suspend; GOOS=linux go build -o main && zip handler.zip main
