@@ -18,6 +18,11 @@ Parameters:
     Default: ScheduleSuspendUntil
     Description: Suspend the scheduler until...
 
+  scheduleTagSNS:
+    Type: String
+    Default: ScheduleSNS
+    Description: Send scheudler events to this SNS
+
 
 Resources:
   ec2scheduler:
@@ -39,11 +44,13 @@ Resources:
               - "ec2:DescribeTags"
               - "ec2:StartInstances"
               - "ec2:StopInstances"
+              - "sns:Publish"
             Resource: "*"
       Environment:
         Variables:
           SCHEDULE_TAG: !Ref scheduleTag
           SCHEDULE_TAG_DAY: !Ref scheduleTagDay
+          SCHEDULE_TAG_SNS: !Ref scheduleTagSNS
       Events:
         Timer:
           Type: Schedule
@@ -73,6 +80,7 @@ Resources:
           SCHEDULE_TAG: !Ref scheduleTag
           SCHEDULE_TAG_DAY: !Ref scheduleTagDay
           SCHEDULE_TAG_SUSPEND: !Ref scheduleTagSuspend
+          SCHEDULE_TAG_SNS: !Ref scheduleTagSNS
           TEAMS_INTEGRATION: true
 
   ec2schedulerSet:

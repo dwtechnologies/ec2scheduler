@@ -19,18 +19,24 @@ type instanceData struct {
 	Schedule        string
 	ScheduleDay     string
 	ScheduleSuspend string
+	ScheduleSNS     string
 }
 
 var scheduleTag = os.Getenv("SCHEDULE_TAG")
 var scheduleTagDay = os.Getenv("SCHEDULE_TAG_DAY")
 var scheduleTagSuspend = os.Getenv("SCHEDULE_TAG_SUSPEND")
+var scheduleTagSNS = os.Getenv("SCHEDULE_TAG_SNS")
 var teamsOutputTmpl = `{{ range . -}}
 ○ EC2 instance [{{ .InstanceID }}]
 State: {{ .State }}
 Schedule: {{ .Schedule }}
 ScheduleDay: {{ .ScheduleDay }}
+{{ if ne .ScheduleSuspend "" -}}
 ScheduleSuspend: {{ .ScheduleSuspend }}
-
+{{ end -}}
+{{ if ne .ScheduleSNS "" -}}
+ScheduleSNS: {{ .ScheduleSNS }}
+{{ end -}}
 {{ end }}`
 
 func main() {
@@ -80,6 +86,10 @@ func handler() (string, error) {
 
 			if *tag.Key == scheduleTagSuspend {
 				d.ScheduleSuspend = *tag.Value
+			}
+
+			if *tag.Key == scheduleTagSNS {
+				d.ScheduleSNS = *tag.Value
 			}
 		}
 
