@@ -19,7 +19,7 @@ parameters and are exposed to the functions as environment variables.
 - **ScheduleDay**: optional, defines to which day the scheduler applies
 
 ```
-  day(s) of the week in ISO format: 1 Monday, 7 Sunday
+  day(s) of the week: 0 Sunday, 1 Monday, ...
   1,2,3,4,5  runs Mon-Fri (default)
   2,3,5      run Tue, Wed, Fri
 ```
