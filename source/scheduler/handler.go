@@ -23,6 +23,7 @@ var scheduleTagSNS = os.Getenv("SCHEDULE_TAG_SNS")
 
 type scheduler struct {
 	instanceID    string
+	instanceName  string
 	instanceState ec2.InstanceStateName
 	snsTopicArn   string
 	startTime     time.Time
@@ -77,6 +78,11 @@ func handler() error {
 			if *tag.Key == scheduleTag && strings.Contains(*tag.Value, "#") {
 				log.Printf("[%s] scheduler is disabled", s.instanceID)
 				break
+			}
+
+			// instance name
+			if *tag.Key == "Name" {
+				s.instanceName = *tag.Value
 			}
 
 			// SNS topic Arn
@@ -225,7 +231,7 @@ func (s *scheduler) fixInstanceState(client ec2iface.EC2API, expectedState ec2.I
 
 func (s *scheduler) publishStateChange(client snsiface.SNSAPI, stateChange ec2.InstanceStateName) error {
 	_, err := client.PublishRequest(&sns.PublishInput{
-		Message:  aws.String(fmt.Sprintf("%s %s", s.instanceID, stateChange)),
+		Message:  aws.String(fmt.Sprintf("%s (%s) state changed to %s", s.instanceID, s.instanceName, stateChange)),
 		TopicArn: aws.String(s.snsTopicArn),
 	}).Send()
 	if err != nil {
