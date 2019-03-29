@@ -52,7 +52,7 @@ func TestDisableScheduler(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := disableScheduler(test.awsClient, test.instanceID, test.scheduleTag)
+			err := createTags(test.awsClient, test.instanceID, []ec2.Tag{{Key: aws.String(scheduleTag), Value: aws.String(test.scheduleTag)}})
 
 			if test.err {
 				assert.Error(t, err)

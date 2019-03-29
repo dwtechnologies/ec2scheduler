@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/ec2iface"
 )
 
 type inputEvent struct {
@@ -48,7 +49,7 @@ func handler(event inputEvent) (string, error) {
 
 	for _, tag := range resp.Reservations[0].Instances[0].Tags {
 		if *tag.Key == scheduleTag {
-			err = suspendScheduler(client, event.InstanceID, []ec2.Tag{
+			err = createTags(client, event.InstanceID, []ec2.Tag{
 				{
 					Key:   aws.String(scheduleTagSuspend),
 					Value: aws.String(event.UnsuspendDatetime),
@@ -71,7 +72,7 @@ func handler(event inputEvent) (string, error) {
 	return fmt.Sprintf("instance %s scheduler suspended until %s", event.InstanceID, event.UnsuspendDatetime), nil
 }
 
-func suspendScheduler(client *ec2.EC2, instanceID string, tags []ec2.Tag) error {
+func createTags(client ec2iface.EC2API, instanceID string, tags []ec2.Tag) error {
 	_, err := client.CreateTagsRequest(&ec2.CreateTagsInput{
 		Resources: []string{instanceID},
 		Tags:      tags,

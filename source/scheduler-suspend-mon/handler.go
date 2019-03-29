@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/ec2iface"
 )
 
 var scheduleTag = os.Getenv("SCHEDULE_TAG")
@@ -83,9 +84,11 @@ func handler() error {
 			}
 
 			// uncomment scheduleTag
-			err = enableScheduleTag(client, *instance.InstanceId, ec2.Tag{
-				Key:   aws.String(scheduleTag),
-				Value: aws.String(strings.Replace(tags[scheduleTag], "#", "", -1)),
+			err = createTags(client, *instance.InstanceId, []ec2.Tag{
+				{
+					Key:   aws.String(scheduleTag),
+					Value: aws.String(strings.Replace(tags[scheduleTag], "#", "", -1)),
+				},
 			})
 			if err != nil {
 				log.Printf("unable to uncomment tag %s", scheduleTag)
@@ -114,12 +117,10 @@ func deleteSuspendTag(client *ec2.EC2, instanceID string) error {
 	return nil
 }
 
-func enableScheduleTag(client *ec2.EC2, instanceID string, scheduleTag ec2.Tag) error {
+func createTags(client ec2iface.EC2API, instanceID string, tags []ec2.Tag) error {
 	_, err := client.CreateTagsRequest(&ec2.CreateTagsInput{
 		Resources: []string{instanceID},
-		Tags: []ec2.Tag{
-			scheduleTag,
-		},
+		Tags:      tags,
 	}).Send()
 	if err != nil {
 		return err

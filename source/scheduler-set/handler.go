@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/ec2iface"
 )
 
 type inputEvent struct {
@@ -59,14 +60,23 @@ func handler(event inputEvent) (string, error) {
 	client := ec2.New(cfg)
 
 	// set tags
-	_, err = client.CreateTagsRequest(&ec2.CreateTagsInput{
-		Resources: []string{event.InstanceID},
-		Tags:      tags,
-	}).Send()
+	err = createTags(client, event.InstanceID, tags)
 	if err != nil {
 		return "", err
 	}
 
 	log.Printf("scheduler set for instance %s. rangeTime: %s, rangeWeekdays: %s", event.InstanceID, event.RangeTime, event.RangeWeekdays)
 	return fmt.Sprintf("scheduler set for instance %s", event.InstanceID), nil
+}
+
+func createTags(client ec2iface.EC2API, instanceID string, tags []ec2.Tag) error {
+	_, err := client.CreateTagsRequest(&ec2.CreateTagsInput{
+		Resources: []string{instanceID},
+		Tags:      tags,
+	}).Send()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

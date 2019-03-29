@@ -55,7 +55,12 @@ func handler(event inputEvent) (string, error) {
 			}
 
 			// disable scheduler
-			err := disableScheduler(client, event.InstanceID, *tag.Value)
+			err := createTags(client, event.InstanceID, []ec2.Tag{
+				{
+					Key:   aws.String(scheduleTag),
+					Value: aws.String(fmt.Sprintf("#%s", scheduleTag)),
+				},
+			})
 			if err != nil {
 				log.Printf("[%s] error disabling scheduler: %s", event.InstanceID, err)
 				return "", err
@@ -67,15 +72,10 @@ func handler(event inputEvent) (string, error) {
 	return fmt.Sprintf("instance scheduler for %s disabled", event.InstanceID), nil
 }
 
-func disableScheduler(client ec2iface.EC2API, instanceID, scheduleTag string) error {
+func createTags(client ec2iface.EC2API, instanceID string, tags []ec2.Tag) error {
 	_, err := client.CreateTagsRequest(&ec2.CreateTagsInput{
 		Resources: []string{instanceID},
-		Tags: []ec2.Tag{
-			{
-				Key:   aws.String(scheduleTag),
-				Value: aws.String(fmt.Sprintf("#%s", scheduleTag)),
-			},
-		},
+		Tags:      tags,
 	}).Send()
 	if err != nil {
 		return err
