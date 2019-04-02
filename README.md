@@ -2,7 +2,7 @@
 Set of Lambda functions to manage the scheduling of EC2 instances via tags.
 
 
-#### Tags
+### Tags
 Tags drive the scheduler's logic. Names are configurable from the SAM Template
 parameters and are exposed to the functions as environment variables.
 
@@ -36,7 +36,7 @@ parameters and are exposed to the functions as environment variables.
 arn:aws:sns:eu-west-1:103145239510:my-topic
 ```
 
-#### Functions
+### Lambda Functions
 - ##### ec2scheduler - (source/scheduler)
 Scheduler engine, runs every 5 minutes to verify tagged EC2 instances (**Schedule** tag) should be running (16) or stopped (status 80).
 
