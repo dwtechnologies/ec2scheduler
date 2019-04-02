@@ -28,7 +28,7 @@ var scheduleTagDay = os.Getenv("SCHEDULE_TAG_DAY")
 var scheduleTagSuspend = os.Getenv("SCHEDULE_TAG_SUSPEND")
 var scheduleTagSNS = os.Getenv("SCHEDULE_TAG_SNS")
 var teamsOutputTmpl = `{{ range . -}}
-○ **{{ .InstanceID }}** {{ if ne .InstanceName "" }}[{{ .InstanceName }}]{{ end }}
+**○ {{ .InstanceID }}** {{ if ne .InstanceName "" }}[{{ .InstanceName }}]{{ end }}
 State: {{ .State }}
 Schedule: {{ .Schedule }}
 {{ if ne .ScheduleDay "" -}}
@@ -75,6 +75,7 @@ func handler() (string, error) {
 	instancesData := []instanceData{}
 	for _, reservation := range resp.Reservations {
 		instance := reservation.Instances[0]
+
 		d := &instanceData{}
 		d.InstanceID = *instance.InstanceId
 		d.State = fmt.Sprintf("%s", instance.State.Name)
