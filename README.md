@@ -68,13 +68,18 @@ arn:aws:sns:eu-west-1:103145239510:my-topic
 
 ### Lambda Functions
 - [ec2scheduler](source/scheduler)
-
+- [ec2scheduler-set](source/scheduler-set)
+- [ec2scheduler-disable](source/scheduler-disable)
+- [ec2scheduler-status](source/scheduler-status)
+- [ec2scheduler-suspend](source/scheduler-suspend)
+- [ec2scheduler-unsuspend](source/scheduler-unsuspend)
+- [ec2scheduler-suspendmon](source/scheduler-suspend-mon)
 
 ##### ec2scheduler
-Scheduler engine, runs every 5 minutes to verify tagged EC2 instances (**Schedule** tag) should be running (16) or stopped (status 80).
+Scheduler engine, runs every 5 minutes to verify tagged EC2 instances (**Schedule** tag) should be running (status 16) or stopped (status 80).
 
 
-##### ec2scheduler-set - (source/scheduler-set)
+##### ec2scheduler-set
 Set the scheduler for instanceId (create tag if doesn't exists, modify if it exists). Event format:
 
 ```json
@@ -94,7 +99,7 @@ Set the scheduler for instanceId (create tag if doesn't exists, modify if it exi
 
 
 
-##### ec2scheduler-disable - (source/scheduler-disable)
+##### ec2scheduler-disable
 Disable scheduler for instanceId. Event format:
 
 ```json
@@ -105,20 +110,19 @@ Disable scheduler for instanceId. Event format:
 
 
 
-##### ec2scheduler-status - (source/scheduler-status)
+##### ec2scheduler-status
 Returns a list of instanceIds and their scheduler settings. Output:
 
-```json
-{
-    "i-00e92a5a9cb7eeb4d":{
-        "Schedule":"07:00-10:00",
-        "ScheduleDay":"1,3,5"
-    }
-}
+```
+○ i-031bd5a2e650bfzf9 [dev-environment-server01]
+State: running
+Schedule: 06:30-17:30
+ScheduleSNS: arn:aws:sns:eu-west-1:123456789012:some-sns
+
 ```
 
 
-##### ec2scheduler-suspend - (source/scheduler-suspend)
+##### ec2scheduler-suspend
 Suspend a scheduler until **ScheduleSuspendUntil** tag. Adds **ScheduleSuspendUntil** tag and comment out **Schedule** tag. Event format:
 
 ```json
@@ -130,7 +134,7 @@ Suspend a scheduler until **ScheduleSuspendUntil** tag. Adds **ScheduleSuspendUn
 
 
 
-##### ec2scheduler-unsuspend - (source/scheduler-unsuspend)
+##### ec2scheduler-unsuspend
 Unsuspend a scheduler. Delete **ScheduleSuspendUntil** tag and uncomment **Schedule** tag. Event format:
 
 ```json
@@ -141,7 +145,7 @@ Unsuspend a scheduler. Delete **ScheduleSuspendUntil** tag and uncomment **Sched
 
 
 
-##### ec2scheduler-suspendmon - (source/scheduler-suspend-mon)
+##### ec2scheduler-suspendmon
 Scheduled function that monitors the **ScheduleSuspendUntil** tag.
 In case the suspend time is expired, the scheduler is unsuspended.
 
