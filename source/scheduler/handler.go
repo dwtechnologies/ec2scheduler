@@ -68,7 +68,8 @@ func handler() error {
 		return nil
 	}
 
-	for _, instance := range resp.Reservations[0].Instances {
+	for _, reservation := range resp.Reservations {
+		instance := reservation.Instances[0]
 		s := &scheduler{}
 		s.instanceID = *instance.InstanceId
 		s.instanceState = instance.State.Name

@@ -28,7 +28,7 @@ var scheduleTagDay = os.Getenv("SCHEDULE_TAG_DAY")
 var scheduleTagSuspend = os.Getenv("SCHEDULE_TAG_SUSPEND")
 var scheduleTagSNS = os.Getenv("SCHEDULE_TAG_SNS")
 var teamsOutputTmpl = `{{ range . -}}
-○ EC2 instance [{{ .InstanceID }}{{ if ne .InstanceName "" }} - {{ .InstanceName }}{{ end }}]
+○ **{{ .InstanceID }}** {{ if ne .InstanceName "" }}[{{ .InstanceName }}]{{ end }}
 State: {{ .State }}
 Schedule: {{ .Schedule }}
 {{ if ne .ScheduleDay "" -}}
@@ -39,7 +39,7 @@ ScheduleSuspend: {{ .ScheduleSuspend }}
 {{ end -}}
 {{ if ne .ScheduleSNS "" -}}
 ScheduleSNS: {{ .ScheduleSNS }}
-{{ end -}}
+{{ end }}
 {{ end }}`
 
 func main() {
@@ -73,7 +73,8 @@ func handler() (string, error) {
 	}
 
 	instancesData := []instanceData{}
-	for _, instance := range resp.Reservations[0].Instances {
+	for _, reservation := range resp.Reservations {
+		instance := reservation.Instances[0]
 		d := &instanceData{}
 		d.InstanceID = *instance.InstanceId
 		d.State = fmt.Sprintf("%s", instance.State.Name)
