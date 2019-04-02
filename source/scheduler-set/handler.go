@@ -66,7 +66,7 @@ func handler(event inputEvent) (string, error) {
 	}
 
 	log.Printf("scheduler set for instance %s. rangeTime: %s, rangeWeekdays: %s", event.InstanceID, event.RangeTime, event.RangeWeekdays)
-	return fmt.Sprintf("scheduler set for instance %s", event.InstanceID), nil
+	return fmt.Sprintf("scheduler set for instance %s: %s", event.InstanceID, event.RangeTime), nil
 }
 
 func createTags(client ec2iface.EC2API, instanceID string, tags []ec2.Tag) error {
