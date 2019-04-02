@@ -75,11 +75,11 @@ arn:aws:sns:eu-west-1:103145239510:my-topic
 - [ec2scheduler-unsuspend](source/scheduler-unsuspend)
 - [ec2scheduler-suspendmon](source/scheduler-suspend-mon)
 
-##### ec2scheduler
+#### ec2scheduler
 Scheduler engine, runs every 5 minutes to verify tagged EC2 instances (**Schedule** tag) should be running (status 16) or stopped (status 80).
 
 
-##### ec2scheduler-set
+#### ec2scheduler-set
 Set the scheduler for instanceId (create tag if doesn't exists, modify if it exists). Event format:
 
 ```json
@@ -98,8 +98,7 @@ Set the scheduler for instanceId (create tag if doesn't exists, modify if it exi
 ```
 
 
-
-##### ec2scheduler-disable
+#### ec2scheduler-disable
 Disable scheduler for instanceId. Event format:
 
 ```json
@@ -109,8 +108,7 @@ Disable scheduler for instanceId. Event format:
 ```
 
 
-
-##### ec2scheduler-status
+#### ec2scheduler-status
 Returns a list of instanceIds and their scheduler settings. Output:
 
 ```
@@ -122,7 +120,7 @@ ScheduleSNS: arn:aws:sns:eu-west-1:123456789012:some-sns
 ```
 
 
-##### ec2scheduler-suspend
+#### ec2scheduler-suspend
 Suspend a scheduler until **ScheduleSuspendUntil** tag. Adds **ScheduleSuspendUntil** tag and comment out **Schedule** tag. Event format:
 
 ```json
@@ -134,7 +132,7 @@ Suspend a scheduler until **ScheduleSuspendUntil** tag. Adds **ScheduleSuspendUn
 
 
 
-##### ec2scheduler-unsuspend
+#### ec2scheduler-unsuspend
 Unsuspend a scheduler. Delete **ScheduleSuspendUntil** tag and uncomment **Schedule** tag. Event format:
 
 ```json
@@ -144,8 +142,7 @@ Unsuspend a scheduler. Delete **ScheduleSuspendUntil** tag and uncomment **Sched
 ```
 
 
-
-##### ec2scheduler-suspendmon
+#### ec2scheduler-suspendmon
 Scheduled function that monitors the **ScheduleSuspendUntil** tag.
 In case the suspend time is expired, the scheduler is unsuspended.
 
