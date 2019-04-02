@@ -1,7 +1,16 @@
 # ⏰ ec2scheduler
 Set of Lambda functions to manage the scheduling of EC2 instances via resource tags.
 
-### Requirements
+### Features
+- basic time range scheduler (09:00-17:00)
+- weekday based scheduler (1,2,...)
+- scheduler suspension, with automatic unsuspension
+- start/stop events sent to an SNS topic
+- easy to integrate with chat bots or APIgw
+- simple to extend
+
+
+### Deployment requirements
 - golang
 - make
 - aws cli
