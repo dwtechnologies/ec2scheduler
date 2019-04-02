@@ -32,7 +32,8 @@ They all have meaningful default values which should work with most environments
 - ScheduleSuspendUntil
 - ScheduleSNS
 
-#### Schedule: required for the scheduler engine to work
+#### Schedule
+required for the scheduler engine to work
 ```
   times are in UTC
   08:00-19:00   start the instance at 08:00, stop it at 19:00
@@ -40,14 +41,16 @@ They all have meaningful default values which should work with most environments
   #08:00-19:00  ignored
 ```
 
-#### ScheduleDay: optional, defines to which day the scheduler applies
+#### ScheduleDay
+optional, defines to which day the scheduler applies
 ```
   day(s) of the week: 0 Sunday, 1 Monday, ...
   1,2,3,4,5  runs Mon-Fri (default)
   2,3,5      run Tue, Wed, Fri
 ```
 
-#### ScheduleSuspendUntil: handle by the ec2schedulerSuspend/Unsuspend/SuspendMon functions. Supported time layouts:
+#### ScheduleSuspendUntil
+handle by the ec2schedulerSuspend/Unsuspend/SuspendMon functions. Supported time layouts:
 ```
 2006
 200601
@@ -56,18 +59,22 @@ They all have meaningful default values which should work with most environments
 20060102T15:04
 ```
 
-#### ScheduleSNS: set to SNS topic Arn if you want to send notification of state change:
+#### ScheduleSNS
+set to SNS topic Arn if you want to send notification of state change:
 ```
 arn:aws:sns:eu-west-1:103145239510:my-topic
 ```
 
 
 ### Lambda Functions
-- ##### ec2scheduler - (source/scheduler)
+- [ec2scheduler](source/scheduler)
+
+
+##### ec2scheduler
 Scheduler engine, runs every 5 minutes to verify tagged EC2 instances (**Schedule** tag) should be running (16) or stopped (status 80).
 
 
-- ##### ec2scheduler-set - (source/scheduler-set)
+##### ec2scheduler-set - (source/scheduler-set)
 Set the scheduler for instanceId (create tag if doesn't exists, modify if it exists). Event format:
 
 ```json
@@ -87,7 +94,7 @@ Set the scheduler for instanceId (create tag if doesn't exists, modify if it exi
 
 
 
-- ##### ec2scheduler-disable - (source/scheduler-disable)
+##### ec2scheduler-disable - (source/scheduler-disable)
 Disable scheduler for instanceId. Event format:
 
 ```json
@@ -98,7 +105,7 @@ Disable scheduler for instanceId. Event format:
 
 
 
-- ##### ec2scheduler-status - (source/scheduler-status)
+##### ec2scheduler-status - (source/scheduler-status)
 Returns a list of instanceIds and their scheduler settings. Output:
 
 ```json
@@ -111,7 +118,7 @@ Returns a list of instanceIds and their scheduler settings. Output:
 ```
 
 
-- ##### ec2scheduler-suspend - (source/scheduler-suspend)
+##### ec2scheduler-suspend - (source/scheduler-suspend)
 Suspend a scheduler until **ScheduleSuspendUntil** tag. Adds **ScheduleSuspendUntil** tag and comment out **Schedule** tag. Event format:
 
 ```json
@@ -123,7 +130,7 @@ Suspend a scheduler until **ScheduleSuspendUntil** tag. Adds **ScheduleSuspendUn
 
 
 
-- ##### ec2scheduler-unsuspend - (source/scheduler-unsuspend)
+##### ec2scheduler-unsuspend - (source/scheduler-unsuspend)
 Unsuspend a scheduler. Delete **ScheduleSuspendUntil** tag and uncomment **Schedule** tag. Event format:
 
 ```json
@@ -134,7 +141,7 @@ Unsuspend a scheduler. Delete **ScheduleSuspendUntil** tag and uncomment **Sched
 
 
 
-- ##### ec2scheduler-suspendmon - (source/scheduler-suspend-mon)
+##### ec2scheduler-suspendmon - (source/scheduler-suspend-mon)
 Scheduled function that monitors the **ScheduleSuspendUntil** tag.
 In case the suspend time is expired, the scheduler is unsuspended.
 
