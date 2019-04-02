@@ -1,10 +1,36 @@
 # 🕒 ec2scheduler
 Set of Lambda functions to manage the scheduling of EC2 instances via tags.
 
+### Requirements
+- golang
+- make
+- aws cli
+
+
+## Deployment
+Use the included `Makefile` to deploy the resources.
+
+The `OWNER` env var is for tagging. So you can set this to what you want.
+The `ENVIRONMENT` env var is also for naming + tagging, but will also be included in CloudWatch logs.
+This so you can make out differences between dev, test and prod etc. if you're running them on the same AWS Account.
+
+```bash
+AWS_PROFILE=my-profile AWS_REGION=region OWNER=TeamName S3_BUCKET=my-artifact-bucket make deploy
+```
+
+Example
+```bash
+AWS_PROFILE=default AWS_REGION=eu-west-1 OWNER=cloudops S3_BUCKET=my-artifact-bucket make deploy
+```
 
 ### Tags
-Tags drive the scheduler's logic. Names are configurable from the SAM Template
+Tags control the scheduler's logic. Tag names are configurable from the SAM Template
 parameters and are exposed to the functions as environment variables.
+They all have meaningful default values which should work with most environments.
+- Schedule
+- ScheduleDay
+- ScheduleSuspendUntil
+- ScheduleSNS
 
 - **Schedule**: required for the scheduler engine to work
 ```
