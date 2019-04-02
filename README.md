@@ -42,11 +42,11 @@ required for the scheduler engine to work
 ```
 
 #### ScheduleDay
-optional, defines to which day the scheduler applies
+optional, defines to which day(s) the scheduler applies
 ```
   day(s) of the week: 0 Sunday, 1 Monday, ...
   1,2,3,4,5  runs Mon-Fri (default)
-  2,3,5      run Tue, Wed, Fri
+  2,3,5      runs Tue, Wed, Fri
 ```
 
 #### ScheduleSuspendUntil
