@@ -28,7 +28,7 @@ var scheduleTagDay = os.Getenv("SCHEDULE_TAG_DAY")
 var scheduleTagSuspend = os.Getenv("SCHEDULE_TAG_SUSPEND")
 var scheduleTagSNS = os.Getenv("SCHEDULE_TAG_SNS")
 var teamsOutputTmpl = `{{ range . -}}
-○ **{{ .InstanceID }}** {{ if ne .InstanceName "" }}[{{ .InstanceName }}]{{ end }}
+▸ **{{ .InstanceID }}** {{ if ne .InstanceName "" }}[{{ .InstanceName }}]{{ end }}
 State: {{ .State }}
 Schedule: {{ .Schedule }}
 {{ if ne .ScheduleDay "" -}}

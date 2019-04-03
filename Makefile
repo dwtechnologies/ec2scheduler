@@ -37,3 +37,5 @@ deploy:
 		--capabilities CAPABILITY_IAM
 	rm -rf build source/*/main source/*/handler.zip
 
+clean:
+	rm -rf build source/*/main source/*/handler.zip
