@@ -112,7 +112,8 @@ func handler() (string, error) {
 		return teamsResponse(instancesData)
 	}
 
-	return fmt.Sprintf("%v", instancesData), nil
+	// OUTPUT_FORMAT: text
+	return fmt.Sprintf("%+v", instancesData), nil
 }
 
 // parse Teams response
