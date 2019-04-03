@@ -77,7 +77,7 @@ arn:aws:sns:eu-west-1:103145239510:my-topic
 
 ### Lambda Functions
 **ec2scheduler** and **ec2scheduler-suspendmon** are the only required functions.
-All other functions are helpers if you want to expose functionalities via chatbot or APIgw, rather than manually adjust the scheduler values from the AWS console.
+The others are helpers if you want to expose functionalities via chatbot or APIgw, rather than manually adjust the scheduler values from the AWS console.
 
 - [ec2scheduler](source/scheduler)
 - [ec2scheduler-suspendmon](source/scheduler-suspend-mon)
