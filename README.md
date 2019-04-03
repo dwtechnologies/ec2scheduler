@@ -131,6 +131,7 @@ Environment:
     OUTPUT_FORMAT: teams
 ```
 
+Output example:
 ```
 ○ i-031bd5a2e650bfzf9 [dev-environment-server01]
 State: running
