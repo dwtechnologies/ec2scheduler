@@ -81,7 +81,7 @@ Resources:
           SCHEDULE_TAG_DAY: !Ref scheduleTagDay
           SCHEDULE_TAG_SNS: !Ref scheduleTagSNS
           SCHEDULE_TAG_SUSPEND: !Ref scheduleTagSuspend
-          TEAMS_INTEGRATION: true
+          OUTPUT_FORMAT: teams
 
   ec2schedulerSet:
     Type: AWS::Serverless::Function
