@@ -107,15 +107,16 @@ func handler() (string, error) {
 
 	log.Printf("%+v", instancesData)
 
-	if os.Getenv("TEAMS_INTEGRATION") != "" {
-		return parseTeamsResponse(instancesData)
+	switch os.Getenv("OUTPUT_FORMAT") {
+	case "teams":
+		return teamsResponse(instancesData)
 	}
 
 	return fmt.Sprintf("%v", instancesData), nil
 }
 
-// parse template response
-func parseTeamsResponse(response []instanceData) (string, error) {
+// parse Teams response
+func teamsResponse(response []instanceData) (string, error) {
 	t, _ := template.New("output").Parse(teamsOutputTmpl)
 	var pp bytes.Buffer
 	if err := t.Execute(&pp, response); err != nil {
