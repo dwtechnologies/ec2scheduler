@@ -5,7 +5,7 @@ Set of Lambda functions to manage the scheduling of EC2 instances via resource t
 - basic time range scheduler (09:00-17:00)
 - weekday based scheduler (1,2,...)
 - scheduler suspension, with automatic unsuspension
-- start/stop events sent to an SNS topic
+- start/stop events notification to an SNS topic
 - easy to integrate with chat bots or APIgw
 - simple to extend
 
@@ -76,13 +76,16 @@ arn:aws:sns:eu-west-1:103145239510:my-topic
 
 
 ### Lambda Functions
+**ec2scheduler** and **ec2scheduler-suspendmon** are the only required functions.
+All other functions are helpers if you want to expose functionalities via chatbot or APIgw, rather than manually adjust the scheduler values from the AWS console.
+
 - [ec2scheduler](source/scheduler)
-- [ec2scheduler-set](source/scheduler-set)
-- [ec2scheduler-disable](source/scheduler-disable)
-- [ec2scheduler-status](source/scheduler-status)
-- [ec2scheduler-suspend](source/scheduler-suspend)
-- [ec2scheduler-unsuspend](source/scheduler-unsuspend)
 - [ec2scheduler-suspendmon](source/scheduler-suspend-mon)
+- [ec2scheduler-disable](source/scheduler-disable) - optional
+- [ec2scheduler-set](source/scheduler-set) - optional
+- [ec2scheduler-status](source/scheduler-status) - optional
+- [ec2scheduler-suspend](source/scheduler-suspend) - optional
+- [ec2scheduler-unsuspend](source/scheduler-unsuspend) - optional
 
 #### ec2scheduler
 Scheduler engine, runs every 5 minutes to verify tagged EC2 instances (**Schedule** tag) should be running (status 16) or stopped (status 80).
