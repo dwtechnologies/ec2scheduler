@@ -1,5 +1,6 @@
 # ⏰ ec2scheduler
 Set of Lambda functions to manage the scheduling of EC2 instances via resource tags.
+![screenshot](screenshot.png)
 
 ### Features
 - basic time range scheduler (09:00-17:00)
