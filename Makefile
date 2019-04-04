@@ -20,9 +20,11 @@ build:
 		golang:1.12.0-stretch sh -c \
 			'apt-get update && apt-get install -y zip && \
 			for f in ${FUNCTIONS}; do \
-				echo $$f; \
+				echo "\n▸ $$f - building..." && \
 				cd /src/$$f && go test -v -cover && go build -o main && \
-				zip handler.zip main && rm main && cd ../..; \
+				zip handler.zip main && \
+				rm main && cd ../.. && \
+				echo "▸ $$f - build done..."; \
 			done'
 	mkdir -p build
 	aws cloudformation package \
