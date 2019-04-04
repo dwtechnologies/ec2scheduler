@@ -11,7 +11,7 @@ Set of Lambda functions to manage the scheduling of EC2 instances via resource t
 
 
 ### Deployment requirements
-- golang
+- golang >= 1.11
 - make
 - aws cli
 
