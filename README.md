@@ -33,7 +33,7 @@ AWS_PROFILE=default AWS_REGION=eu-west-1 OWNER=cloudops S3_BUCKET=my-artifact-bu
 ```
 
 **cn-north-1, cn-northwest-1**: these regions don't support environment variables inside Lambda functions.
-Please comment out all the **'Environment:'** blocks in the sam.yaml file.
+Please comment out all the **'Environment:'** blocks in the sam.yaml file. Default tag values will be used in these regions.
 
 ### Tags
 Tags control the scheduler's logic. Tag names are configurable from the SAM Template
