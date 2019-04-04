@@ -36,6 +36,17 @@ func main() {
 }
 
 func handler() error {
+	// CN regions don't support env variables
+	if scheduleTag == "" {
+		scheduleTag = "Schedule"
+	}
+	if scheduleTagDay == "" {
+		scheduleTagDay = "ScheduleDay"
+	}
+	if scheduleTagSNS == "" {
+		scheduleTagSNS = "ScheduleSNS"
+	}
+
 	cfg, err := external.LoadDefaultAWSConfig()
 	if err != nil {
 		return err
