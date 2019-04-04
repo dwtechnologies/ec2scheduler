@@ -6,19 +6,24 @@ PROJECT      ?= itops
 OWNER        ?= cloudops
 SERVICE_NAME ?= ec2scheduler
 S3_BUCKET    ?=
+FUNCTIONS    = scheduler scheduler-disable scheduler-set scheduler-status scheduler-suspend scheduler-unsuspend scheduler-suspend-mon
 
 ###
 
 deploy: build deploy
 
 build:
-	cd source/scheduler-disable; go test -v -cover && GOOS=linux go build -o main && zip handler.zip main
-	cd source/scheduler-set; GOOS=linux go build -o main && zip handler.zip main
-	cd source/scheduler-status; GOOS=linux go build -o main && zip handler.zip main
-	cd source/scheduler-suspend; GOOS=linux go build -o main && zip handler.zip main
-	cd source/scheduler-unsuspend; GOOS=linux go build -o main && zip handler.zip main
-	cd source/scheduler-suspend-mon; GOOS=linux go build -o main && zip handler.zip main
-	cd source/scheduler; go test -v -cover && GOOS=linux go build -o main && zip handler.zip main
+	docker run --rm \
+		-v $(PWD)/source:/src \
+		-w /src \
+		-e FUNCTIONS="${FUNCTIONS}" \
+		golang:1.12.0-stretch sh -c \
+			'apt-get update && apt-get install -y zip && \
+			for f in ${FUNCTIONS}; do \
+				echo $$f; \
+				cd /src/$$f && go test -v -cover && go build -o main && \
+				zip handler.zip main && rm main && cd ../..; \
+			done'
 	mkdir -p build
 	aws cloudformation package \
 		--template-file sam.yaml \
