@@ -13,16 +13,18 @@ FUNCTIONS    = scheduler scheduler-disable scheduler-set scheduler-status schedu
 deploy: build package deploy
 
 build:
-	docker run --rm \
+	@docker run --rm \
 		-v $(PWD)/source:/src \
 		-w /src \
 		-e FUNCTIONS="${FUNCTIONS}" \
 		golang:1.12.0-stretch sh -c \
 			'apt-get update && apt-get install -y zip && \
 			for f in ${FUNCTIONS}; do \
-				echo $$f; \
+				echo "\n▸ $$f - building code..." && \
 				cd /src/$$f && go test -v -cover && go build -o main && \
-				zip handler.zip main && rm main && cd ../..; \
+				zip handler.zip main && \
+				rm main && cd ../.. && \
+				echo "▸ $$f - build done..."; \
 			done'
 
 build-native:

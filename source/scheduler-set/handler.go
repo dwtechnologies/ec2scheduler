@@ -30,6 +30,14 @@ func main() {
 }
 
 func handler(event inputEvent) (string, error) {
+	// CN regions don't support env variables
+	if scheduleTag == "" {
+		scheduleTag = "Schedule"
+	}
+	if scheduleTagDay == "" {
+		scheduleTagDay = "ScheduleDay"
+	}
+
 	matched, err := regexp.Match(rangeTimeRegexp, []byte(event.RangeTime))
 	if err != nil {
 		return "", err

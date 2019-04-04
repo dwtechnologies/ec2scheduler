@@ -28,6 +28,11 @@ func main() {
 }
 
 func handler(event inputEvent) (string, error) {
+	// CN regions don't support env variables
+	if scheduleTag == "" {
+		scheduleTag = "Schedule"
+	}
+
 	cfg, err := external.LoadDefaultAWSConfig()
 	if err != nil {
 		return "", err

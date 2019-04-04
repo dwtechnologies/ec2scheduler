@@ -17,10 +17,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sns/snsiface"
 )
 
-var scheduleTag = os.Getenv("SCHEDULE_TAG")
-var scheduleTagDay = os.Getenv("SCHEDULE_TAG_DAY")
-var scheduleTagSNS = os.Getenv("SCHEDULE_TAG_SNS")
-
 type scheduler struct {
 	instanceID    string
 	instanceName  string
@@ -31,11 +27,26 @@ type scheduler struct {
 	weekdays      []time.Weekday
 }
 
+var scheduleTag = os.Getenv("SCHEDULE_TAG")
+var scheduleTagDay = os.Getenv("SCHEDULE_TAG_DAY")
+var scheduleTagSNS = os.Getenv("SCHEDULE_TAG_SNS")
+
 func main() {
 	lambda.Start(handler)
 }
 
 func handler() error {
+	// CN regions don't support env variables
+	if scheduleTag == "" {
+		scheduleTag = "Schedule"
+	}
+	if scheduleTagDay == "" {
+		scheduleTagDay = "ScheduleDay"
+	}
+	if scheduleTagSNS == "" {
+		scheduleTagSNS = "ScheduleSNS"
+	}
+
 	cfg, err := external.LoadDefaultAWSConfig()
 	if err != nil {
 		return err
@@ -68,11 +79,16 @@ func handler() error {
 		return nil
 	}
 
+	// outer loop Reservations
+	// inner loop instance.Tags
+	// resp.Reservations[i].Instances[0]
+	// ec2.DescribeInstancesOutput{Reservations: []ec2.RunInstancesOutput{Instances: []ec2.Instance{}}}
 	for _, reservation := range resp.Reservations {
 		instance := reservation.Instances[0]
-		s := &scheduler{}
-		s.instanceID = *instance.InstanceId
-		s.instanceState = instance.State.Name
+		s := &scheduler{
+			instanceID:    *instance.InstanceId,
+			instanceState: instance.State.Name,
+		}
 
 		for _, tag := range instance.Tags {
 			// scheduler disabled
