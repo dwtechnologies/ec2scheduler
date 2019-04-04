@@ -32,7 +32,7 @@ Example
 AWS_PROFILE=default AWS_REGION=eu-west-1 OWNER=cloudops S3_BUCKET=my-artifact-bucket make deploy
 ```
 
-Notes: **cn-north-1** and **cn-northwest-1** regions don't support environment variables inside Lambda functions.
+**cn-north-1, cn-northwest-1**: these regions don't support environment variables inside Lambda functions.
 Please comment out all the 'Environment:' blocks in the sam.yaml file.
 
 ### Tags
