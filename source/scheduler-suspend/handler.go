@@ -37,6 +37,14 @@ func main() {
 }
 
 func handler(event inputEvent) (string, error) {
+	// CN regions don't support env variables
+	if scheduleTag == "" {
+		scheduleTag = "Schedule"
+	}
+	if scheduleTagSuspend == "" {
+		scheduleTagSuspend = "ScheduleSuspendUntil"
+	}
+
 	// parse suspend time
 	if _, ok := scheduleTagSuspendLayouts[len(event.UnsuspendDatetime)]; !ok {
 		log.Printf("[%s] layout doesn't match any supported one %s", event.InstanceID, event.UnsuspendDatetime)
