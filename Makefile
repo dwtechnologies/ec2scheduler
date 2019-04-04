@@ -10,7 +10,7 @@ FUNCTIONS    = scheduler scheduler-disable scheduler-set scheduler-status schedu
 
 ###
 
-deploy: build deploy
+deploy: build package deploy
 
 build:
 	docker run --rm \
@@ -24,6 +24,17 @@ build:
 				cd /src/$$f && go test -v -cover && go build -o main && \
 				zip handler.zip main && rm main && cd ../..; \
 			done'
+
+build-native:
+	cd source/scheduler-disable; go test -v -cover && GOOS=linux go build -o main && zip handler.zip main
+	cd source/scheduler-set; GOOS=linux go build -o main && zip handler.zip main
+	cd source/scheduler-status; GOOS=linux go build -o main && zip handler.zip main
+	cd source/scheduler-suspend-mon; GOOS=linux go build -o main && zip handler.zip main
+	cd source/scheduler-suspend; GOOS=linux go build -o main && zip handler.zip main
+	cd source/scheduler-unsuspend; GOOS=linux go build -o main && zip handler.zip main
+	cd source/scheduler; go test -v -cover && GOOS=linux go build -o main && zip handler.zip main
+
+package:
 	mkdir -p build
 	aws cloudformation package \
 		--template-file sam.yaml \
@@ -44,3 +55,5 @@ deploy:
 
 clean:
 	rm -rf build source/*/main source/*/handler.zip
+
+# eof
