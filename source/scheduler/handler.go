@@ -17,10 +17,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sns/snsiface"
 )
 
-var scheduleTag = os.Getenv("SCHEDULE_TAG")
-var scheduleTagDay = os.Getenv("SCHEDULE_TAG_DAY")
-var scheduleTagSNS = os.Getenv("SCHEDULE_TAG_SNS")
-
 type scheduler struct {
 	instanceID    string
 	instanceName  string
@@ -30,6 +26,10 @@ type scheduler struct {
 	stopTime      time.Time
 	weekdays      []time.Weekday
 }
+
+var scheduleTag = os.Getenv("SCHEDULE_TAG")
+var scheduleTagDay = os.Getenv("SCHEDULE_TAG_DAY")
+var scheduleTagSNS = os.Getenv("SCHEDULE_TAG_SNS")
 
 func main() {
 	lambda.Start(handler)
