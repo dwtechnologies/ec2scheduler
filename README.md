@@ -18,7 +18,7 @@ Set of Lambda functions to manage the scheduling of EC2 instances via resource t
 - aws cli
 
 
-## Deployment
+### Deployment
 Use the included `Makefile` to deploy the resources.
 
 The `OWNER` env var is for tagging. So you can set this to what you want.
