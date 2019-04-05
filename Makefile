@@ -10,7 +10,7 @@ FUNCTIONS    = scheduler scheduler-disable scheduler-set scheduler-status schedu
 
 ###
 
-deploy: build package deploy
+deploy: build package-cf deploy-cf
 
 build:
 	@docker run --rm \
@@ -36,7 +36,7 @@ build-native:
 	cd source/scheduler-unsuspend; GOOS=linux go build -o main && zip handler.zip main
 	cd source/scheduler; go test -v -cover && GOOS=linux go build -o main && zip handler.zip main
 
-package:
+package-cf:
 	mkdir -p build
 	aws cloudformation package \
 		--template-file sam.yaml \
@@ -44,7 +44,7 @@ package:
 		--s3-bucket $(S3_BUCKET) \
 		--s3-prefix $(PROJECT)/$(SERVICE_NAME)
 
-deploy:
+deploy-cf:
 	aws cloudformation deploy \
 		--template-file build/sam.yaml \
 		--stack-name ec2scheduler \
