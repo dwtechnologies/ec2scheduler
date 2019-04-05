@@ -13,7 +13,7 @@ Set of Lambda functions to manage the scheduling of EC2 instances via resource t
 
 
 ### Deployment requirements
-- golang >= 1.11
+- docker
 - make
 - aws cli
 
