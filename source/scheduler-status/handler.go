@@ -13,6 +13,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 )
 
+type inputEvent struct {
+	Format string
+}
 type instanceData struct {
 	InstanceID      string
 	InstanceName    string
@@ -46,7 +49,7 @@ func main() {
 	lambda.Start(handler)
 }
 
-func handler() (string, error) {
+func handler(event inputEvent) (string, error) {
 	// CN regions don't support env variables
 	if scheduleTag == "" {
 		scheduleTag = "Schedule"
@@ -121,12 +124,12 @@ func handler() (string, error) {
 
 	log.Printf("%+v", instancesData)
 
-	switch os.Getenv("OUTPUT_FORMAT") {
+	switch event.Format {
 	case "teams":
 		return teamsResponse(instancesData)
 	}
 
-	// OUTPUT_FORMAT: text
+	// event.Format: text
 	return fmt.Sprintf("%+v", instancesData), nil
 }
 

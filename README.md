@@ -127,13 +127,13 @@ Disable scheduler for instanceId. Event format:
 
 #### ec2scheduler-status
 Returns a list of instanceIds and their scheduler settings.
-Output formats are set via environment variable, supported formats are:
+Output formats are set via event request, supported formats are:
 - teams (Microsoft Teams)
 - text
-```
-Environment:
-  Variables:
-    OUTPUT_FORMAT: teams
+```json
+{ 
+    "format":  "teams"
+}
 ```
 
 Output example:
