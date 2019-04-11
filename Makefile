@@ -17,7 +17,7 @@ build:
 		-v $(PWD)/source:/src \
 		-w /src \
 		-e FUNCTIONS="${FUNCTIONS}" \
-		golang:1.12.0-stretch sh -c \
+		golang:stretch sh -c \
 			'apt-get update && apt-get install -y zip && \
 			for f in ${FUNCTIONS}; do \
 				echo "\n▸ $$f - building code..." && \
