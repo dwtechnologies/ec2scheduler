@@ -127,10 +127,12 @@ Disable scheduler for instanceId. Event format:
 
 #### ec2scheduler-status
 Returns a list of instanceIds and their scheduler settings.
-Output formats are set via event request, supported formats are:
-- teams (Microsoft Teams)
-- text
-Filter applies to the Name tag and it's optional.
+Request payload:
+- format: output formats
+    - teams (Microsoft Teams)
+    - text
+- filter (optional): apply a filter to the 'Name' tag
+
 ```json
 { 
     "format":  "teams",
