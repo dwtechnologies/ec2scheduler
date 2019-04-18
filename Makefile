@@ -21,7 +21,7 @@ build:
 			'apt-get update && apt-get install -y zip && \
 			for f in ${FUNCTIONS}; do \
 				echo "\n▸ $$f - building code..." && \
-				cd /src/$$f && go test -v -cover && go build -o main && \
+				cd /src/$$f && go test -v -cover && go build -ldflags="-s -w" -o main && \
 				zip handler.zip main && \
 				rm main && cd ../.. && \
 				echo "▸ $$f - build done..."; \
