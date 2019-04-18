@@ -14,7 +14,8 @@ import (
 )
 
 type inputEvent struct {
-	Format string
+	Format string `json:"format"`
+	Filter string `json:"filter"`
 }
 type instanceData struct {
 	InstanceID      string
@@ -68,20 +69,28 @@ func handler(event inputEvent) (string, error) {
 	if err != nil {
 		return "", err
 	}
-
 	client := ec2.New(cfg)
 
-	resp, err := client.DescribeInstancesRequest(&ec2.DescribeInstancesInput{
-		Filters: []ec2.Filter{
-			{
-				Name:   aws.String("instance-state-name"),
-				Values: []string{"running", "stopped"},
-			},
-			{
-				Name:   aws.String("tag-key"),
-				Values: []string{scheduleTag},
-			},
+	filters := []ec2.Filter{
+		{
+			Name:   aws.String("instance-state-name"),
+			Values: []string{"running", "stopped"},
 		},
+		{
+			Name:   aws.String("tag-key"),
+			Values: []string{scheduleTag},
+		},
+	}
+
+	if event.Filter != "" {
+		filters = append(filters, ec2.Filter{
+			Name:   aws.String("tag:Name"),
+			Values: []string{fmt.Sprintf("%s*", event.Filter)},
+		})
+	}
+
+	resp, err := client.DescribeInstancesRequest(&ec2.DescribeInstancesInput{
+		Filters: filters,
 	}).Send()
 
 	if len(resp.Reservations) < 1 {
