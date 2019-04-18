@@ -130,9 +130,11 @@ Returns a list of instanceIds and their scheduler settings.
 Output formats are set via event request, supported formats are:
 - teams (Microsoft Teams)
 - text
+Filter applies to the Name tag and it's optional.
 ```json
 { 
-    "format":  "teams"
+    "format":  "teams",
+    "filter": "server01-prod"
 }
 ```
 
