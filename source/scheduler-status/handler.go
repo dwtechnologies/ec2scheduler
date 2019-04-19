@@ -71,26 +71,21 @@ func handler(event inputEvent) (string, error) {
 	}
 	client := ec2.New(cfg)
 
-	filters := []ec2.Filter{
-		{
-			Name:   aws.String("instance-state-name"),
-			Values: []string{"running", "stopped"},
-		},
-		{
-			Name:   aws.String("tag-key"),
-			Values: []string{scheduleTag},
-		},
-	}
-
-	if event.Filter != "" {
-		filters = append(filters, ec2.Filter{
-			Name:   aws.String("tag:Name"),
-			Values: []string{fmt.Sprintf("%s*", event.Filter)},
-		})
-	}
-
 	resp, err := client.DescribeInstancesRequest(&ec2.DescribeInstancesInput{
-		Filters: filters,
+		Filters: []ec2.Filter{
+			{
+				Name:   aws.String("instance-state-name"),
+				Values: []string{"running", "stopped"},
+			},
+			{
+				Name:   aws.String("tag-key"),
+				Values: []string{scheduleTag},
+			},
+			{
+				Name:   aws.String("tag:Name"),
+				Values: []string{fmt.Sprintf("%s*", event.Filter)},
+			},
+		},
 	}).Send()
 
 	if len(resp.Reservations) < 1 {
