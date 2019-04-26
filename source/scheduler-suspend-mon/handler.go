@@ -72,24 +72,24 @@ func handler() error {
 
 		// parse suspend time
 		if _, ok := scheduleTagSuspendLayouts[len(tags[scheduleTagSuspend])]; !ok {
-			log.Printf("layout doesn't match any supported one %s", tags[scheduleTagSuspend])
-			break
+			log.Printf("[%s] layout doesn't match any supported one %s", *instance.InstanceId, tags[scheduleTagSuspend])
+			continue
 		}
 		suspendTime, err := time.Parse(scheduleTagSuspendLayouts[len(tags[scheduleTagSuspend])], tags[scheduleTagSuspend])
 		if err != nil {
-			log.Printf("can't parse date %s", tags[scheduleTagSuspend])
-			break
+			log.Printf("[%s] can't parse date %s", *instance.InstanceId, tags[scheduleTagSuspend])
+			continue
 		}
 
 		// check if suspend time is expired
 		if time.Now().After(suspendTime) {
-			log.Printf("suspension tag [%s] expired on instance %s. unsuspending...", tags[scheduleTagSuspend], *instance.InstanceId)
+			log.Printf("[%s] suspension tag [%s] expired. unsuspending...", *instance.InstanceId, tags[scheduleTagSuspend])
 
 			// delete suspend tag
 			err := deleteSuspendTag(client, *instance.InstanceId)
 			if err != nil {
-				log.Printf("unable to remove tag %s", scheduleTagSuspend)
-				return err
+				log.Printf("[%s] unable to remove tag %s. Error: %s", *instance.InstanceId, scheduleTagSuspend, err)
+				continue
 			}
 
 			// uncomment scheduleTag
@@ -100,8 +100,7 @@ func handler() error {
 				},
 			})
 			if err != nil {
-				log.Printf("unable to uncomment tag %s", scheduleTag)
-				return err
+				log.Printf("[%s] unable to uncomment tag %s. Error: %s", *instance.InstanceId, scheduleTag, err)
 			}
 		}
 	}
