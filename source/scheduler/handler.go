@@ -136,7 +136,7 @@ func handler() error {
 		stateChange, err := s.fixInstanceState(client, expectedState)
 		if err != nil {
 			log.Printf("[%s] unable to change state", s.instanceID)
-			break
+			continue
 		}
 
 		// publish state changes to SNS topic
