@@ -1,7 +1,9 @@
 package main
 
 import (
+	"context"
 	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -11,7 +13,7 @@ import (
 )
 
 type mockAWSClient struct {
-	ec2iface.EC2API
+	ec2iface.ClientAPI
 	createTagsResponse *ec2.CreateTagsOutput
 	createTagsError    error
 }
@@ -19,8 +21,9 @@ type mockAWSClient struct {
 func (m *mockAWSClient) CreateTagsRequest(input *ec2.CreateTagsInput) ec2.CreateTagsRequest {
 	return ec2.CreateTagsRequest{
 		Request: &aws.Request{
-			Data:  m.createTagsResponse,
-			Error: m.createTagsError,
+			Data:        m.createTagsResponse,
+			Error:       m.createTagsError,
+			HTTPRequest: &http.Request{},
 		},
 	}
 }
@@ -52,7 +55,7 @@ func TestDisableScheduler(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := createTags(test.awsClient, test.instanceID, []ec2.Tag{{Key: aws.String(scheduleTag), Value: aws.String(test.scheduleTag)}})
+			err := createTags(context.Background(), test.awsClient, test.instanceID, []ec2.Tag{{Key: aws.String(scheduleTag), Value: aws.String(test.scheduleTag)}})
 
 			if test.err {
 				assert.Error(t, err)

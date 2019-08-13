@@ -5,6 +5,7 @@ package main
 // { "instanceId": "i-00e92a5a9cb7eeb4d" }
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -27,7 +28,7 @@ func main() {
 	lambda.Start(handler)
 }
 
-func handler(event inputEvent) (string, error) {
+func handler(ctx context.Context, event inputEvent) (string, error) {
 	// CN regions don't support env variables
 	if scheduleTag == "" {
 		scheduleTag = "Schedule"
@@ -42,7 +43,7 @@ func handler(event inputEvent) (string, error) {
 
 	resp, err := client.DescribeInstancesRequest(&ec2.DescribeInstancesInput{
 		InstanceIds: []string{event.InstanceID},
-	}).Send()
+	}).Send(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -60,7 +61,7 @@ func handler(event inputEvent) (string, error) {
 			}
 
 			// disable scheduler
-			err := createTags(client, event.InstanceID, []ec2.Tag{
+			err := createTags(ctx, client, event.InstanceID, []ec2.Tag{
 				{
 					Key:   aws.String(scheduleTag),
 					Value: aws.String(fmt.Sprintf("#%s", scheduleTag)),
@@ -77,11 +78,11 @@ func handler(event inputEvent) (string, error) {
 	return fmt.Sprintf("instance scheduler for %s disabled", event.InstanceID), nil
 }
 
-func createTags(client ec2iface.EC2API, instanceID string, tags []ec2.Tag) error {
+func createTags(ctx context.Context, client ec2iface.ClientAPI, instanceID string, tags []ec2.Tag) error {
 	_, err := client.CreateTagsRequest(&ec2.CreateTagsInput{
 		Resources: []string{instanceID},
 		Tags:      tags,
-	}).Send()
+	}).Send(ctx)
 	if err != nil {
 		return err
 	}
