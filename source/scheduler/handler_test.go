@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"testing"
 	"time"
 
@@ -12,7 +13,7 @@ import (
 )
 
 type mockAWSClient struct {
-	ec2iface.EC2API
+	ec2iface.ClientAPI
 	startInstancesResponse *ec2.StartInstancesOutput
 	startInstancesError    error
 	stopInstancesResponse  *ec2.StopInstancesOutput
@@ -27,8 +28,9 @@ func init() {
 func (m *mockAWSClient) StartInstancesRequest(input *ec2.StartInstancesInput) ec2.StartInstancesRequest {
 	return ec2.StartInstancesRequest{
 		Request: &aws.Request{
-			Data:  m.startInstancesResponse,
-			Error: m.startInstancesError,
+			Data:        m.startInstancesResponse,
+			Error:       m.startInstancesError,
+			HTTPRequest: &http.Request{},
 		},
 	}
 }
@@ -36,8 +38,9 @@ func (m *mockAWSClient) StartInstancesRequest(input *ec2.StartInstancesInput) ec
 func (m *mockAWSClient) StopInstancesRequest(input *ec2.StopInstancesInput) ec2.StopInstancesRequest {
 	return ec2.StopInstancesRequest{
 		Request: &aws.Request{
-			Data:  m.stopInstancesResponse,
-			Error: m.stopInstancesError,
+			Data:        m.stopInstancesResponse,
+			Error:       m.stopInstancesError,
+			HTTPRequest: &http.Request{},
 		},
 	}
 }
