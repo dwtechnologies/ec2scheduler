@@ -64,7 +64,7 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 
 		// uncomment scheduleTag
 		if *tag.Key == scheduleTag {
-			err := createTags(client, event.InstanceID, []ec2.Tag{
+			err := createTags(ctx, client, event.InstanceID, []ec2.Tag{
 				{
 					Key:   aws.String(scheduleTag),
 					Value: aws.String(strings.Replace(*tag.Value, "#", "", -1)),
