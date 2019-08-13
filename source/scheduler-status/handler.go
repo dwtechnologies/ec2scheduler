@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"html/template"
 	"log"
@@ -50,7 +51,7 @@ func main() {
 	lambda.Start(handler)
 }
 
-func handler(event inputEvent) (string, error) {
+func handler(ctx context.Context, event inputEvent) (string, error) {
 	// CN regions don't support env variables
 	if scheduleTag == "" {
 		scheduleTag = "Schedule"
@@ -86,7 +87,7 @@ func handler(event inputEvent) (string, error) {
 				Values: []string{fmt.Sprintf("%s*", event.Filter)},
 			},
 		},
-	}).Send()
+	}).Send(ctx)
 
 	if len(resp.Reservations) < 1 {
 		log.Printf("no scheduled instances")
