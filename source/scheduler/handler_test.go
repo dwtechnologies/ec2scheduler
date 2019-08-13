@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"testing"
@@ -253,7 +254,7 @@ func TestFixInstanceState(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := test.s.fixInstanceState(test.awsClient, test.expectedState)
+			_, err := test.s.fixInstanceState(context.Background(), test.awsClient, test.expectedState)
 			if test.err {
 				assert.Error(t, err)
 				return
