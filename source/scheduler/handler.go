@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -35,7 +36,7 @@ func main() {
 	lambda.Start(handler)
 }
 
-func handler() error {
+func handler(ctx context.Context) error {
 	// CN regions don't support env variables
 	if scheduleTag == "" {
 		scheduleTag = "Schedule"
@@ -69,7 +70,7 @@ func handler() error {
 				},
 			},
 		},
-	}).Send()
+	}).Send(ctx)
 	if err != nil {
 		return err
 	}
@@ -133,7 +134,7 @@ func handler() error {
 
 		// get instance expected state (running, stopped)
 		expectedState := s.shouldRun(time.Now(), time.Date(0000, 01, 01, time.Now().Hour(), time.Now().Minute(), 00, 00, time.UTC))
-		stateChange, err := s.fixInstanceState(client, expectedState)
+		stateChange, err := s.fixInstanceState(ctx, client, expectedState)
 		if err != nil {
 			log.Printf("[%s] unable to change state", s.instanceID)
 			continue
@@ -213,7 +214,7 @@ func (s *scheduler) shouldRunDay(weekday time.Weekday) bool {
 
 // fix instance state - start or stop
 // return instance state and a possible error
-func (s *scheduler) fixInstanceState(client ec2iface.EC2API, expectedState ec2.InstanceStateName) (ec2.InstanceStateName, error) {
+func (s *scheduler) fixInstanceState(ctx context.Context, client ec2iface.ClientAPI, expectedState ec2.InstanceStateName) (ec2.InstanceStateName, error) {
 	if s.instanceState == expectedState {
 		log.Printf("[%s] nothing to do", s.instanceID)
 		return "", nil
@@ -222,7 +223,7 @@ func (s *scheduler) fixInstanceState(client ec2iface.EC2API, expectedState ec2.I
 	if expectedState == ec2.InstanceStateNameRunning {
 		_, err := client.StartInstancesRequest(&ec2.StartInstancesInput{
 			InstanceIds: []string{s.instanceID},
-		}).Send()
+		}).Send(ctx)
 		if err != nil {
 			return "", err
 		}
@@ -234,7 +235,7 @@ func (s *scheduler) fixInstanceState(client ec2iface.EC2API, expectedState ec2.I
 	if expectedState == ec2.InstanceStateNameStopped {
 		_, err := client.StopInstancesRequest(&ec2.StopInstancesInput{
 			InstanceIds: []string{s.instanceID},
-		}).Send()
+		}).Send(ctx)
 		if err != nil {
 			return "", err
 		}
@@ -246,11 +247,11 @@ func (s *scheduler) fixInstanceState(client ec2iface.EC2API, expectedState ec2.I
 	return "", nil
 }
 
-func (s *scheduler) publishStateChange(client snsiface.SNSAPI, stateChange ec2.InstanceStateName) error {
+func (s *scheduler) publishStateChange(client snsiface.ClientAPI, stateChange ec2.InstanceStateName) error {
 	_, err := client.PublishRequest(&sns.PublishInput{
 		Message:  aws.String(fmt.Sprintf("%s (%s) state changed to %s", s.instanceID, s.instanceName, stateChange)),
 		TopicArn: aws.String(s.snsTopicArn),
-	}).Send()
+	}).Send(context.Background())
 	if err != nil {
 		return err
 	}

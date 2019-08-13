@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -29,7 +30,7 @@ func main() {
 	lambda.Start(handler)
 }
 
-func handler(event inputEvent) (string, error) {
+func handler(ctx context.Context, event inputEvent) (string, error) {
 	// CN regions don't support env variables
 	if scheduleTag == "" {
 		scheduleTag = "Schedule"
@@ -68,7 +69,7 @@ func handler(event inputEvent) (string, error) {
 	client := ec2.New(cfg)
 
 	// set tags
-	err = createTags(client, event.InstanceID, tags)
+	err = createTags(ctx, client, event.InstanceID, tags)
 	if err != nil {
 		return "", err
 	}
@@ -77,11 +78,11 @@ func handler(event inputEvent) (string, error) {
 	return fmt.Sprintf("scheduler set for instance %s: %s", event.InstanceID, event.RangeTime), nil
 }
 
-func createTags(client ec2iface.EC2API, instanceID string, tags []ec2.Tag) error {
+func createTags(ctx context.Context, client ec2iface.ClientAPI, instanceID string, tags []ec2.Tag) error {
 	_, err := client.CreateTagsRequest(&ec2.CreateTagsInput{
 		Resources: []string{instanceID},
 		Tags:      tags,
-	}).Send()
+	}).Send(ctx)
 	if err != nil {
 		return err
 	}

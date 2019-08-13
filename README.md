@@ -81,11 +81,11 @@ arn:aws:sns:eu-west-1:103145239510:my-topic
 
 
 ### Lambda Functions
-**ec2scheduler** and **ec2scheduler-suspendmon** are the only required functions.
+**ec2scheduler** and **ec2scheduler-suspend-mon** are the only required functions.
 The others are helpers if you want to expose functionalities via chatbot or APIgw, rather than manually adjust the scheduler values from the AWS console.
 
 - [ec2scheduler](source/scheduler)
-- [ec2scheduler-suspendmon](source/scheduler-suspend-mon)
+- [ec2scheduler-suspend-mon](source/scheduler-suspend-mon)
 - [ec2scheduler-disable](source/scheduler-disable) - optional
 - [ec2scheduler-set](source/scheduler-set) - optional
 - [ec2scheduler-status](source/scheduler-status) - optional
@@ -172,7 +172,7 @@ Unsuspend a scheduler. Delete **ScheduleSuspendUntil** tag and uncomment **Sched
 ```
 
 
-#### ec2scheduler-suspendmon
+#### ec2scheduler-suspend-mon
 Scheduled function that monitors the **ScheduleSuspendUntil** tag.
 In case the suspend time is expired, the scheduler is unsuspended.
 

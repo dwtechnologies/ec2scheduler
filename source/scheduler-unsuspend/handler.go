@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -24,7 +25,7 @@ func main() {
 	lambda.Start(handler)
 }
 
-func handler(event inputEvent) (string, error) {
+func handler(ctx context.Context, event inputEvent) (string, error) {
 	// CN regions don't support env variables
 	if scheduleTag == "" {
 		scheduleTag = "Schedule"
@@ -41,7 +42,7 @@ func handler(event inputEvent) (string, error) {
 
 	resp, err := client.DescribeInstancesRequest(&ec2.DescribeInstancesInput{
 		InstanceIds: []string{event.InstanceID},
-	}).Send()
+	}).Send(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -54,7 +55,7 @@ func handler(event inputEvent) (string, error) {
 	for _, tag := range resp.Reservations[0].Instances[0].Tags {
 		// remove suspend tag (scheduleTagSuspend)
 		if *tag.Key == scheduleTagSuspend {
-			err := deleteSuspendTag(client, event.InstanceID)
+			err := deleteSuspendTag(ctx, client, event.InstanceID)
 			if err != nil {
 				log.Printf("unable to remove tag %s", scheduleTagSuspend)
 				return fmt.Sprintf("unable to remove tag %s", scheduleTagSuspend), err
@@ -63,7 +64,7 @@ func handler(event inputEvent) (string, error) {
 
 		// uncomment scheduleTag
 		if *tag.Key == scheduleTag {
-			err := createTags(client, event.InstanceID, []ec2.Tag{
+			err := createTags(ctx, client, event.InstanceID, []ec2.Tag{
 				{
 					Key:   aws.String(scheduleTag),
 					Value: aws.String(strings.Replace(*tag.Value, "#", "", -1)),
@@ -80,7 +81,7 @@ func handler(event inputEvent) (string, error) {
 	return fmt.Sprintf("instance %s scheduler unsuspended", event.InstanceID), nil
 }
 
-func deleteSuspendTag(client *ec2.EC2, instanceID string) error {
+func deleteSuspendTag(ctx context.Context, client ec2iface.ClientAPI, instanceID string) error {
 	_, err := client.DeleteTagsRequest(&ec2.DeleteTagsInput{
 		Resources: []string{instanceID},
 		Tags: []ec2.Tag{
@@ -88,7 +89,7 @@ func deleteSuspendTag(client *ec2.EC2, instanceID string) error {
 				Key: aws.String(scheduleTagSuspend),
 			},
 		},
-	}).Send()
+	}).Send(ctx)
 	if err != nil {
 		return err
 	}
@@ -96,11 +97,11 @@ func deleteSuspendTag(client *ec2.EC2, instanceID string) error {
 	return nil
 }
 
-func createTags(client ec2iface.EC2API, instanceID string, tags []ec2.Tag) error {
+func createTags(ctx context.Context, client ec2iface.ClientAPI, instanceID string, tags []ec2.Tag) error {
 	_, err := client.CreateTagsRequest(&ec2.CreateTagsInput{
 		Resources: []string{instanceID},
 		Tags:      tags,
-	}).Send()
+	}).Send(ctx)
 	if err != nil {
 		return err
 	}

@@ -5,6 +5,7 @@ package main
 // { "instanceId": "i-00e92a5a9cb7eeb4d", "unsuspendDatetime": "20171117" }
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -36,7 +37,7 @@ func main() {
 	lambda.Start(handler)
 }
 
-func handler(event inputEvent) (string, error) {
+func handler(ctx context.Context, event inputEvent) (string, error) {
 	// CN regions don't support env variables
 	if scheduleTag == "" {
 		scheduleTag = "Schedule"
@@ -64,7 +65,7 @@ func handler(event inputEvent) (string, error) {
 
 	resp, err := client.DescribeInstancesRequest(&ec2.DescribeInstancesInput{
 		InstanceIds: []string{event.InstanceID},
-	}).Send()
+	}).Send(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -76,7 +77,7 @@ func handler(event inputEvent) (string, error) {
 
 	for _, tag := range resp.Reservations[0].Instances[0].Tags {
 		if *tag.Key == scheduleTag {
-			err = createTags(client, event.InstanceID, []ec2.Tag{
+			err = createTags(ctx, client, event.InstanceID, []ec2.Tag{
 				{
 					Key:   aws.String(scheduleTagSuspend),
 					Value: aws.String(event.UnsuspendDatetime),
@@ -99,11 +100,11 @@ func handler(event inputEvent) (string, error) {
 	return fmt.Sprintf("unable to find %s tag for instance %s", scheduleTag, event.InstanceID), nil
 }
 
-func createTags(client ec2iface.EC2API, instanceID string, tags []ec2.Tag) error {
+func createTags(ctx context.Context, client ec2iface.ClientAPI, instanceID string, tags []ec2.Tag) error {
 	_, err := client.CreateTagsRequest(&ec2.CreateTagsInput{
 		Resources: []string{instanceID},
 		Tags:      tags,
-	}).Send()
+	}).Send(ctx)
 	if err != nil {
 		return err
 	}

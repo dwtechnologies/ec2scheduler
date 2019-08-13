@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"os"
 	"strings"
@@ -27,7 +28,7 @@ func main() {
 	lambda.Start(handler)
 }
 
-func handler() error {
+func handler(ctx context.Context) error {
 	// CN regions don't support env variables
 	if scheduleTag == "" {
 		scheduleTag = "Schedule"
@@ -53,7 +54,7 @@ func handler() error {
 				Values: []string{scheduleTagSuspend},
 			},
 		},
-	}).Send()
+	}).Send(ctx)
 	if err != nil {
 		return err
 	}
@@ -86,14 +87,14 @@ func handler() error {
 			log.Printf("[%s] suspension tag [%s] expired. unsuspending...", *instance.InstanceId, tags[scheduleTagSuspend])
 
 			// delete suspend tag
-			err := deleteSuspendTag(client, *instance.InstanceId)
+			err := deleteSuspendTag(ctx, client, *instance.InstanceId)
 			if err != nil {
 				log.Printf("[%s] unable to remove tag %s. Error: %s", *instance.InstanceId, scheduleTagSuspend, err)
 				continue
 			}
 
 			// uncomment scheduleTag
-			err = createTags(client, *instance.InstanceId, []ec2.Tag{
+			err = createTags(ctx, client, *instance.InstanceId, []ec2.Tag{
 				{
 					Key:   aws.String(scheduleTag),
 					Value: aws.String(strings.Replace(tags[scheduleTag], "#", "", -1)),
@@ -109,7 +110,7 @@ func handler() error {
 	return nil
 }
 
-func deleteSuspendTag(client *ec2.EC2, instanceID string) error {
+func deleteSuspendTag(ctx context.Context, client ec2iface.ClientAPI, instanceID string) error {
 	_, err := client.DeleteTagsRequest(&ec2.DeleteTagsInput{
 		Resources: []string{instanceID},
 		Tags: []ec2.Tag{
@@ -117,7 +118,7 @@ func deleteSuspendTag(client *ec2.EC2, instanceID string) error {
 				Key: aws.String(scheduleTagSuspend),
 			},
 		},
-	}).Send()
+	}).Send(ctx)
 	if err != nil {
 		return err
 	}
@@ -125,11 +126,11 @@ func deleteSuspendTag(client *ec2.EC2, instanceID string) error {
 	return nil
 }
 
-func createTags(client ec2iface.EC2API, instanceID string, tags []ec2.Tag) error {
+func createTags(ctx context.Context, client ec2iface.ClientAPI, instanceID string, tags []ec2.Tag) error {
 	_, err := client.CreateTagsRequest(&ec2.CreateTagsInput{
 		Resources: []string{instanceID},
 		Tags:      tags,
-	}).Send()
+	}).Send(ctx)
 	if err != nil {
 		return err
 	}
