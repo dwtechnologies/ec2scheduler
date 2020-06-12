@@ -55,7 +55,7 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 	for _, tag := range resp.Reservations[0].Instances[0].Tags {
 		// remove suspend tag (scheduleTagSuspend)
 		if *tag.Key == conf.ScheduleTagSuspend {
-			err := deleteSuspendTag(ctx, client, event.InstanceID)
+			err := deleteSuspendTag(ctx, client, conf.ScheduleTagSuspend, event.InstanceID)
 			if err != nil {
 				log.Printf("unable to remove tag %s", conf.ScheduleTagSuspend)
 				return fmt.Sprintf("unable to remove tag %s", conf.ScheduleTagSuspend), err
@@ -71,8 +71,8 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 				},
 			})
 			if err != nil {
-				log.Printf("unable to uncomment tag %s", scheduleTag)
-				return fmt.Sprintf("unable to uncomment tag %s", scheduleTag), err
+				log.Printf("unable to uncomment tag %s", conf.ScheduleTag)
+				return fmt.Sprintf("unable to uncomment tag %s", conf.ScheduleTag), err
 			}
 		}
 	}
@@ -81,12 +81,12 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 	return fmt.Sprintf("instance %s scheduler unsuspended", event.InstanceID), nil
 }
 
-func deleteSuspendTag(ctx context.Context, client ec2iface.ClientAPI, instanceID string) error {
+func deleteSuspendTag(ctx context.Context, client ec2iface.ClientAPI, tag, instanceID string) error {
 	_, err := client.DeleteTagsRequest(&ec2.DeleteTagsInput{
 		Resources: []string{instanceID},
 		Tags: []ec2.Tag{
 			{
-				Key: aws.String(scheduleTagSuspend),
+				Key: aws.String(tag),
 			},
 		},
 	}).Send(ctx)
