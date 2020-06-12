@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 
 	"github.com/aws/aws-lambda-go/lambda"
@@ -16,22 +15,27 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/ec2iface"
+	"github.com/caarlos0/env"
 )
 
 type inputEvent struct {
 	InstanceID string `json:"instanceId"`
 }
 
-var scheduleTag = os.Getenv("SCHEDULE_TAG")
+type config struct {
+	ScheduleTag string `env:"SCHEDULE_TAG" envDefault:"Schedule"`
+}
 
 func main() {
 	lambda.Start(handler)
 }
 
 func handler(ctx context.Context, event inputEvent) (string, error) {
-	// CN regions don't support env variables
-	if scheduleTag == "" {
-		scheduleTag = "Schedule"
+	// parse env variables
+	conf := &config{}
+	if err := env.Parse(conf); err != nil {
+		log.Printf("%s", err)
+		return "", err
 	}
 
 	cfg, err := external.LoadDefaultAWSConfig()
@@ -54,7 +58,7 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 	}
 
 	for _, tag := range resp.Reservations[0].Instances[0].Tags {
-		if *tag.Key == scheduleTag {
+		if *tag.Key == conf.ScheduleTag {
 			if strings.Contains(*tag.Value, "#") {
 				log.Printf("[%s] instance scheduler already disabled", event.InstanceID)
 				return fmt.Sprintf("instance scheduler for %s already disabled", event.InstanceID), nil
@@ -63,8 +67,8 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 			// disable scheduler
 			err := createTags(ctx, client, event.InstanceID, []ec2.Tag{
 				{
-					Key:   aws.String(scheduleTag),
-					Value: aws.String(fmt.Sprintf("#%s", scheduleTag)),
+					Key:   aws.String(conf.ScheduleTag),
+					Value: aws.String(fmt.Sprintf("#%s", conf.ScheduleTag)),
 				},
 			})
 			if err != nil {
