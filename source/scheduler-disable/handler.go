@@ -15,7 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/ec2iface"
-	"github.com/caarlos0/env"
+	"github.com/caarlos0/env/v6"
 )
 
 type inputEvent struct {
