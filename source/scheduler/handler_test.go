@@ -15,10 +15,12 @@ import (
 
 type mockAWSClient struct {
 	ec2iface.ClientAPI
+
 	startInstancesResponse *ec2.StartInstancesOutput
-	startInstancesError    error
 	stopInstancesResponse  *ec2.StopInstancesOutput
-	stopInstancesError     error
+
+	startInstancesError error
+	stopInstancesError  error
 }
 
 func init() {
@@ -27,35 +29,39 @@ func init() {
 }
 
 func (m *mockAWSClient) StartInstancesRequest(input *ec2.StartInstancesInput) ec2.StartInstancesRequest {
+	mockReq := &aws.Request{
+		Data:        m.startInstancesResponse,
+		Error:       m.startInstancesError,
+		HTTPRequest: &http.Request{},
+	}
+
 	return ec2.StartInstancesRequest{
-		Request: &aws.Request{
-			Data:        m.startInstancesResponse,
-			Error:       m.startInstancesError,
-			HTTPRequest: &http.Request{},
-		},
+		Request: mockReq,
 	}
 }
 
 func (m *mockAWSClient) StopInstancesRequest(input *ec2.StopInstancesInput) ec2.StopInstancesRequest {
+	mockReq := &aws.Request{
+		Data:        m.stopInstancesResponse,
+		Error:       m.stopInstancesError,
+		HTTPRequest: &http.Request{},
+	}
+
 	return ec2.StopInstancesRequest{
-		Request: &aws.Request{
-			Data:        m.stopInstancesResponse,
-			Error:       m.stopInstancesError,
-			HTTPRequest: &http.Request{},
-		},
+		Request: mockReq,
 	}
 }
 
 func TestShouldRunDay(t *testing.T) {
 	tests := []struct {
 		name    string
-		s       *scheduler
+		sch     *scheduler
 		weekday time.Weekday
 		want    bool
 	}{
 		{
 			name: "weekdays not defined - Mon-Fri",
-			s: &scheduler{
+			sch: &scheduler{
 				instanceID: "i-07d023c826d243165",
 			},
 			weekday: time.Monday,
@@ -63,7 +69,7 @@ func TestShouldRunDay(t *testing.T) {
 		},
 		{
 			name: "weekdays not defined - Saturday",
-			s: &scheduler{
+			sch: &scheduler{
 				instanceID: "i-07d023c826d243165",
 			},
 			weekday: time.Saturday,
@@ -72,7 +78,7 @@ func TestShouldRunDay(t *testing.T) {
 
 		{
 			name: "weekdays defined - Mon,Wed,Thu",
-			s: &scheduler{
+			sch: &scheduler{
 				instanceID: "i-07d023c826d243165",
 				weekdays:   []time.Weekday{1, 3, 5},
 			},
@@ -81,7 +87,7 @@ func TestShouldRunDay(t *testing.T) {
 		},
 		{
 			name: "weekdays defined - wrong day",
-			s: &scheduler{
+			sch: &scheduler{
 				instanceID: "i-07d023c826d243165",
 				weekdays:   []time.Weekday{1, 3, 5},
 			},
@@ -92,7 +98,7 @@ func TestShouldRunDay(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := test.s.shouldRunDay(test.weekday)
+			got := test.sch.shouldRunDay(test.weekday)
 
 			assert.Equal(t, test.want, got)
 		})
@@ -102,14 +108,14 @@ func TestShouldRunDay(t *testing.T) {
 func TestShouldRun(t *testing.T) {
 	tests := []struct {
 		name    string
-		s       *scheduler
+		sch     *scheduler
 		dateNow time.Time
 		timeNow time.Time
 		want    ec2.InstanceStateName
 	}{
 		{
 			name: "weekend",
-			s: &scheduler{
+			sch: &scheduler{
 				instanceID: "i-07d023c826d243165",
 				startTime:  time.Date(0000, 01, 01, 8, 00, 00, 00, time.UTC),
 				stopTime:   time.Date(0000, 01, 01, 19, 00, 00, 00, time.UTC),
@@ -120,7 +126,7 @@ func TestShouldRun(t *testing.T) {
 		},
 		{
 			name: "startTime:stopTime same day",
-			s: &scheduler{
+			sch: &scheduler{
 				instanceID: "i-07d023c826d243165",
 				startTime:  time.Date(0000, 01, 0, 8, 00, 00, 00, time.UTC),
 				stopTime:   time.Date(0000, 01, 03, 19, 00, 00, 00, time.UTC),
@@ -130,7 +136,7 @@ func TestShouldRun(t *testing.T) {
 		},
 		{
 			name: "startTime:stopTime same day - out of range",
-			s: &scheduler{
+			sch: &scheduler{
 				instanceID: "i-07d023c826d243165",
 				startTime:  time.Date(0000, 01, 01, 8, 00, 00, 00, time.UTC),
 				stopTime:   time.Date(0000, 01, 01, 19, 00, 00, 00, time.UTC),
@@ -140,7 +146,7 @@ func TestShouldRun(t *testing.T) {
 		},
 		{
 			name: "startTime:stopTime between days - before midnight",
-			s: &scheduler{
+			sch: &scheduler{
 				instanceID: "i-07d023c826d243165",
 				startTime:  time.Date(0000, 01, 01, 19, 00, 00, 00, time.UTC),
 				stopTime:   time.Date(0000, 01, 01, 7, 30, 00, 00, time.UTC),
@@ -150,7 +156,7 @@ func TestShouldRun(t *testing.T) {
 		},
 		{
 			name: "startTime:stopTime between days - after midnight",
-			s: &scheduler{
+			sch: &scheduler{
 				instanceID: "i-07d023c826d243165",
 				startTime:  time.Date(0000, 01, 01, 19, 00, 00, 00, time.UTC),
 				stopTime:   time.Date(0000, 01, 01, 7, 30, 00, 00, time.UTC),
@@ -160,7 +166,7 @@ func TestShouldRun(t *testing.T) {
 		},
 		{
 			name: "startTime:stopTime between days - out of range",
-			s: &scheduler{
+			sch: &scheduler{
 				instanceID: "i-07d023c826d243165",
 				startTime:  time.Date(0000, 01, 01, 19, 00, 00, 00, time.UTC),
 				stopTime:   time.Date(0000, 01, 01, 7, 30, 00, 00, time.UTC),
@@ -172,7 +178,7 @@ func TestShouldRun(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			got := test.s.shouldRun(test.dateNow, test.timeNow)
+			got := test.sch.shouldRun(test.dateNow, test.timeNow)
 
 			fmt.Printf("%s\n", got)
 			assert.Equal(t, test.want, got)
@@ -182,35 +188,35 @@ func TestShouldRun(t *testing.T) {
 
 func TestFixInstanceState(t *testing.T) {
 	tests := []struct {
-		name          string
-		awsClient     *mockAWSClient
-		s             *scheduler
-		expectedState ec2.InstanceStateName
-		err           bool
+		name      string
+		awsClient *mockAWSClient
+		sch       *scheduler
+		want      ec2.InstanceStateName
+		err       bool
 	}{
 		{
 			name: "running-running",
 			awsClient: &mockAWSClient{
 				startInstancesResponse: &ec2.StartInstancesOutput{},
 			},
-			s: &scheduler{
+			sch: &scheduler{
 				instanceID:    "i-07d023c826d243165",
 				instanceState: ec2.InstanceStateNameRunning,
 			},
-			expectedState: ec2.InstanceStateNameRunning,
-			err:           false,
+			want: ec2.InstanceStateNameRunning,
+			err:  false,
 		},
 		{
 			name: "stopped-running",
 			awsClient: &mockAWSClient{
 				startInstancesResponse: &ec2.StartInstancesOutput{},
 			},
-			s: &scheduler{
+			sch: &scheduler{
 				instanceID:    "i-07d023c826d243165",
 				instanceState: ec2.InstanceStateNameStopped,
 			},
-			expectedState: ec2.InstanceStateNameRunning,
-			err:           false,
+			want: ec2.InstanceStateNameRunning,
+			err:  false,
 		},
 		{
 			name: "stopped-running-error",
@@ -218,24 +224,24 @@ func TestFixInstanceState(t *testing.T) {
 				startInstancesResponse: &ec2.StartInstancesOutput{},
 				startInstancesError:    fmt.Errorf("error starting instance"),
 			},
-			s: &scheduler{
+			sch: &scheduler{
 				instanceID:    "i-07d023c826d243165",
 				instanceState: ec2.InstanceStateNameStopped,
 			},
-			expectedState: ec2.InstanceStateNameRunning,
-			err:           true,
+			want: ec2.InstanceStateNameRunning,
+			err:  true,
 		},
 		{
 			name: "running-stopped",
 			awsClient: &mockAWSClient{
 				stopInstancesResponse: &ec2.StopInstancesOutput{},
 			},
-			s: &scheduler{
+			sch: &scheduler{
 				instanceID:    "i-07d023c826d243165",
 				instanceState: ec2.InstanceStateNameRunning,
 			},
-			expectedState: ec2.InstanceStateNameStopped,
-			err:           false,
+			want: ec2.InstanceStateNameStopped,
+			err:  false,
 		},
 		{
 			name: "running-stopped-error",
@@ -243,18 +249,18 @@ func TestFixInstanceState(t *testing.T) {
 				stopInstancesResponse: &ec2.StopInstancesOutput{},
 				stopInstancesError:    fmt.Errorf("error stopping instance"),
 			},
-			s: &scheduler{
+			sch: &scheduler{
 				instanceID:    "i-07d023c826d243165",
 				instanceState: ec2.InstanceStateNameRunning,
 			},
-			expectedState: ec2.InstanceStateNameStopped,
-			err:           true,
+			want: ec2.InstanceStateNameStopped,
+			err:  true,
 		},
 	}
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := test.s.fixInstanceState(context.Background(), test.awsClient, test.expectedState)
+			_, err := test.sch.fixInstanceState(context.Background(), test.awsClient, test.want)
 			if test.err {
 				assert.Error(t, err)
 				return
