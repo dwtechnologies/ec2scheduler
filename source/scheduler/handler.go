@@ -80,7 +80,7 @@ func handler(ctx context.Context) error {
 		return nil
 	}
 
-	// outer loop Reservations
+	// outer loop Reservations (instances)
 	// inner loop instance.Tags
 	// resp.Reservations[i].Instances[0]
 	// ec2.DescribeInstancesOutput{Reservations: []ec2.RunInstancesOutput{Instances: []ec2.Instance{}}}
@@ -151,6 +151,8 @@ func handler(ctx context.Context) error {
 
 			log.Printf("[%s] notify %s of state change", s.instanceID, s.snsTopicArn)
 		}
+
+		log.Printf("\n")
 	}
 
 	return nil
