@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 
 	"github.com/aws/aws-lambda-go/lambda"
@@ -12,26 +11,27 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/ec2iface"
+	"github.com/caarlos0/env/v6"
 )
 
 type inputEvent struct {
 	InstanceID string `json:"instanceId"`
 }
-
-var scheduleTag = os.Getenv("SCHEDULE_TAG")
-var scheduleTagSuspend = os.Getenv("SCHEDULE_TAG_SUSPEND")
+type config struct {
+	ScheduleTag        string `env:"SCHEDULE_TAG" envDefault:"Schedule"`
+	ScheduleTagSuspend string `env:"SCHEDULE_TAG_SUSPEND" envDefault:"ScheduleSuspendUntil"`
+}
 
 func main() {
 	lambda.Start(handler)
 }
 
 func handler(ctx context.Context, event inputEvent) (string, error) {
-	// CN regions don't support env variables
-	if scheduleTag == "" {
-		scheduleTag = "Schedule"
-	}
-	if scheduleTagSuspend == "" {
-		scheduleTagSuspend = "ScheduleSuspendUntil"
+	// parse env variables
+	conf := &config{}
+	if err := env.Parse(conf); err != nil {
+		log.Printf("%s", err)
+		return "", err
 	}
 
 	cfg, err := external.LoadDefaultAWSConfig()
@@ -54,19 +54,19 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 
 	for _, tag := range resp.Reservations[0].Instances[0].Tags {
 		// remove suspend tag (scheduleTagSuspend)
-		if *tag.Key == scheduleTagSuspend {
+		if *tag.Key == conf.ScheduleTagSuspend {
 			err := deleteSuspendTag(ctx, client, event.InstanceID)
 			if err != nil {
-				log.Printf("unable to remove tag %s", scheduleTagSuspend)
-				return fmt.Sprintf("unable to remove tag %s", scheduleTagSuspend), err
+				log.Printf("unable to remove tag %s", conf.ScheduleTagSuspend)
+				return fmt.Sprintf("unable to remove tag %s", conf.ScheduleTagSuspend), err
 			}
 		}
 
 		// uncomment scheduleTag
-		if *tag.Key == scheduleTag {
+		if *tag.Key == conf.ScheduleTag {
 			err := createTags(ctx, client, event.InstanceID, []ec2.Tag{
 				{
-					Key:   aws.String(scheduleTag),
+					Key:   aws.String(conf.ScheduleTag),
 					Value: aws.String(strings.Replace(*tag.Value, "#", "", -1)),
 				},
 			})
