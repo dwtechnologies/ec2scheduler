@@ -218,15 +218,14 @@ func (s *scheduler) shouldRunDay(weekday time.Weekday) bool {
 // return instance state and a possible error
 func (s *scheduler) fixInstanceState(ctx context.Context, client ec2iface.ClientAPI, expectedState ec2.InstanceStateName) (ec2.InstanceStateName, error) {
 	if s.instanceState == expectedState {
-		log.Printf("[%s] nothing to do", s.instanceID)
+		log.Printf("[%s] instance %s. Nothing to do", s.instanceID, s.instanceState)
 		return "", nil
 	}
 
 	if expectedState == ec2.InstanceStateNameRunning {
-		_, err := client.StartInstancesRequest(&ec2.StartInstancesInput{
+		if _, err := client.StartInstancesRequest(&ec2.StartInstancesInput{
 			InstanceIds: []string{s.instanceID},
-		}).Send(ctx)
-		if err != nil {
+		}).Send(ctx); err != nil {
 			return "", err
 		}
 
@@ -235,10 +234,9 @@ func (s *scheduler) fixInstanceState(ctx context.Context, client ec2iface.Client
 	}
 
 	if expectedState == ec2.InstanceStateNameStopped {
-		_, err := client.StopInstancesRequest(&ec2.StopInstancesInput{
+		if _, err := client.StopInstancesRequest(&ec2.StopInstancesInput{
 			InstanceIds: []string{s.instanceID},
-		}).Send(ctx)
-		if err != nil {
+		}).Send(ctx); err != nil {
 			return "", err
 		}
 

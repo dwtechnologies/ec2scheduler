@@ -16,12 +16,14 @@ import (
 type mockAWSClient struct {
 	ec2iface.ClientAPI
 
-	startInstancesResponse *ec2.StartInstancesOutput
-	stopInstancesResponse  *ec2.StopInstancesOutput
+	startInstancesOutput *ec2.StartInstancesOutput
+	stopInstancesOutput  *ec2.StopInstancesOutput
 
 	startInstancesError error
 	stopInstancesError  error
 }
+
+var instanceID = "i-07d023c826d243165"
 
 func init() {
 	// disable logger
@@ -29,26 +31,32 @@ func init() {
 }
 
 func (m *mockAWSClient) StartInstancesRequest(input *ec2.StartInstancesInput) ec2.StartInstancesRequest {
-	mockReq := &aws.Request{
-		Data:        m.startInstancesResponse,
-		Error:       m.startInstancesError,
-		HTTPRequest: &http.Request{},
-	}
-
 	return ec2.StartInstancesRequest{
-		Request: mockReq,
+		Request: &aws.Request{
+			Data:  m.startInstancesOutput,
+			Error: m.startInstancesError,
+
+			HTTPRequest: &http.Request{},
+			Retryer:     aws.NoOpRetryer{},
+		},
+		Input: &ec2.StartInstancesInput{
+			InstanceIds: []string{instanceID},
+		},
 	}
 }
 
 func (m *mockAWSClient) StopInstancesRequest(input *ec2.StopInstancesInput) ec2.StopInstancesRequest {
-	mockReq := &aws.Request{
-		Data:        m.stopInstancesResponse,
-		Error:       m.stopInstancesError,
-		HTTPRequest: &http.Request{},
-	}
-
 	return ec2.StopInstancesRequest{
-		Request: mockReq,
+		Request: &aws.Request{
+			Data:  m.stopInstancesOutput,
+			Error: m.stopInstancesError,
+
+			HTTPRequest: &http.Request{},
+			Retryer:     aws.NoOpRetryer{},
+		},
+		Input: &ec2.StopInstancesInput{
+			InstanceIds: []string{instanceID},
+		},
 	}
 }
 
@@ -62,7 +70,7 @@ func TestShouldRunDay(t *testing.T) {
 		{
 			name: "weekdays not defined - Mon-Fri",
 			sch: &scheduler{
-				instanceID: "i-07d023c826d243165",
+				instanceID: instanceID,
 			},
 			weekday: time.Monday,
 			want:    true,
@@ -70,7 +78,7 @@ func TestShouldRunDay(t *testing.T) {
 		{
 			name: "weekdays not defined - Saturday",
 			sch: &scheduler{
-				instanceID: "i-07d023c826d243165",
+				instanceID: instanceID,
 			},
 			weekday: time.Saturday,
 			want:    false,
@@ -195,62 +203,62 @@ func TestFixInstanceState(t *testing.T) {
 		err       bool
 	}{
 		{
-			name: "running-running",
+			name: "running-to-running",
 			awsClient: &mockAWSClient{
-				startInstancesResponse: &ec2.StartInstancesOutput{},
+				startInstancesOutput: &ec2.StartInstancesOutput{},
 			},
 			sch: &scheduler{
-				instanceID:    "i-07d023c826d243165",
+				instanceID:    instanceID,
 				instanceState: ec2.InstanceStateNameRunning,
 			},
 			want: ec2.InstanceStateNameRunning,
 			err:  false,
 		},
 		{
-			name: "stopped-running",
+			name: "stopped-to-running",
 			awsClient: &mockAWSClient{
-				startInstancesResponse: &ec2.StartInstancesOutput{},
+				startInstancesOutput: &ec2.StartInstancesOutput{},
 			},
 			sch: &scheduler{
-				instanceID:    "i-07d023c826d243165",
+				instanceID:    instanceID,
 				instanceState: ec2.InstanceStateNameStopped,
 			},
 			want: ec2.InstanceStateNameRunning,
 			err:  false,
 		},
 		{
-			name: "stopped-running-error",
+			name: "stopped-to-running-error",
 			awsClient: &mockAWSClient{
-				startInstancesResponse: &ec2.StartInstancesOutput{},
-				startInstancesError:    fmt.Errorf("error starting instance"),
+				startInstancesOutput: &ec2.StartInstancesOutput{},
+				startInstancesError:  fmt.Errorf("error starting instance"),
 			},
 			sch: &scheduler{
-				instanceID:    "i-07d023c826d243165",
+				instanceID:    instanceID,
 				instanceState: ec2.InstanceStateNameStopped,
 			},
 			want: ec2.InstanceStateNameRunning,
 			err:  true,
 		},
 		{
-			name: "running-stopped",
+			name: "running-to-stopped",
 			awsClient: &mockAWSClient{
-				stopInstancesResponse: &ec2.StopInstancesOutput{},
+				stopInstancesOutput: &ec2.StopInstancesOutput{},
 			},
 			sch: &scheduler{
-				instanceID:    "i-07d023c826d243165",
+				instanceID:    instanceID,
 				instanceState: ec2.InstanceStateNameRunning,
 			},
 			want: ec2.InstanceStateNameStopped,
 			err:  false,
 		},
 		{
-			name: "running-stopped-error",
+			name: "running-to-stopped-error",
 			awsClient: &mockAWSClient{
-				stopInstancesResponse: &ec2.StopInstancesOutput{},
-				stopInstancesError:    fmt.Errorf("error stopping instance"),
+				stopInstancesOutput: &ec2.StopInstancesOutput{},
+				stopInstancesError:  fmt.Errorf("error stopping instance"),
 			},
 			sch: &scheduler{
-				instanceID:    "i-07d023c826d243165",
+				instanceID:    instanceID,
 				instanceState: ec2.InstanceStateNameRunning,
 			},
 			want: ec2.InstanceStateNameStopped,
