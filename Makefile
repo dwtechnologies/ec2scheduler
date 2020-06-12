@@ -39,14 +39,14 @@ build-native:
 package-cf:
 	mkdir -p build
 	aws cloudformation package \
-		--template-file sam.yaml \
-		--output-template-file build/sam.yaml \
+		--template-file template.yaml \
+		--output-template-file build/template.yaml \
 		--s3-bucket $(S3_BUCKET) \
 		--s3-prefix $(PROJECT)/$(SERVICE_NAME)
 
 deploy-cf:
 	aws cloudformation deploy \
-		--template-file build/sam.yaml \
+		--template-file build/template.yaml \
 		--stack-name ec2scheduler \
 		--tags \
 			Environment=$(ENVIRONMENT) \
