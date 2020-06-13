@@ -203,7 +203,7 @@ func TestFixInstanceState(t *testing.T) {
 		err       bool
 	}{
 		{
-			name: "running-to-running",
+			name: "running to running",
 			awsClient: &mockAWSClient{
 				startInstancesOutput: &ec2.StartInstancesOutput{},
 			},
@@ -215,7 +215,7 @@ func TestFixInstanceState(t *testing.T) {
 			err:  false,
 		},
 		{
-			name: "stopped-to-running",
+			name: "stopped to running",
 			awsClient: &mockAWSClient{
 				startInstancesOutput: &ec2.StartInstancesOutput{},
 			},
@@ -227,7 +227,7 @@ func TestFixInstanceState(t *testing.T) {
 			err:  false,
 		},
 		{
-			name: "stopped-to-running-error",
+			name: "stopped to running - error",
 			awsClient: &mockAWSClient{
 				startInstancesOutput: &ec2.StartInstancesOutput{},
 				startInstancesError:  fmt.Errorf("error starting instance"),
@@ -240,7 +240,7 @@ func TestFixInstanceState(t *testing.T) {
 			err:  true,
 		},
 		{
-			name: "running-to-stopped",
+			name: "running to stopped",
 			awsClient: &mockAWSClient{
 				stopInstancesOutput: &ec2.StopInstancesOutput{},
 			},
@@ -252,7 +252,7 @@ func TestFixInstanceState(t *testing.T) {
 			err:  false,
 		},
 		{
-			name: "running-to-stopped-error",
+			name: "running to stopped - error",
 			awsClient: &mockAWSClient{
 				stopInstancesOutput: &ec2.StopInstancesOutput{},
 				stopInstancesError:  fmt.Errorf("error stopping instance"),
