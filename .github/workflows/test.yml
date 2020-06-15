@@ -27,3 +27,6 @@ jobs:
     - name: test scheduler
       run: cd source/scheduler; go test ./... -v -cover
 
+    - name: test scheduler disable
+      run: cd source/scheduler-disable; go test ./... -v -cover
+
