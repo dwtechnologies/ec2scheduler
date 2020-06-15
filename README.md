@@ -1,4 +1,6 @@
 # ⏰ ec2scheduler
+[![Actions Status](https://github.com/dwtechnologies/ec2scheduler/workflows/test/badge.svg)](https://github.com/dwtechnologies/ec2scheduler/actions)
+
 Set of Lambda functions to manage the scheduling of EC2 instances via resource tags.
 
 ![screenshot](screenshot.png)
