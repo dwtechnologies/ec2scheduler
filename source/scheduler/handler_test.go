@@ -23,7 +23,7 @@ type mockAWSClient struct {
 	stopInstancesError  error
 }
 
-var instanceID = "i-07d023c826d243165"
+const instanceID = "i-07d023c826d243165"
 
 func init() {
 	// disable logger
