@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"regexp"
 
 	"github.com/aws/aws-lambda-go/lambda"
@@ -12,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/ec2iface"
+	"github.com/caarlos0/env/v6"
 )
 
 type inputEvent struct {
@@ -20,9 +20,10 @@ type inputEvent struct {
 	RangeWeekdays string `json:"rangeWeekdays"`
 }
 
-var scheduleTag = os.Getenv("SCHEDULE_TAG")
-var scheduleTagDay = os.Getenv("SCHEDULE_TAG_DAY")
-var scheduleTagSuspend = os.Getenv("SCHEDULE_TAG_SUSPEND")
+type config struct {
+	ScheduleTag    string `env:"SCHEDULE_TAG" envDefault:"Schedule"`
+	ScheduleTagDay string `env:"SCHEDULE_TAG_DAY" envDefault:"ScheduleDay"`
+}
 
 const rangeTimeRegexp = `#?\d{2}:\d{2}-\d{2}:\d{2}`
 
@@ -31,12 +32,11 @@ func main() {
 }
 
 func handler(ctx context.Context, event inputEvent) (string, error) {
-	// CN regions don't support env variables
-	if scheduleTag == "" {
-		scheduleTag = "Schedule"
-	}
-	if scheduleTagDay == "" {
-		scheduleTagDay = "ScheduleDay"
+	// parse env variables
+	conf := &config{}
+	if err := env.Parse(conf); err != nil {
+		log.Printf("%s", err)
+		return "", err
 	}
 
 	matched, err := regexp.Match(rangeTimeRegexp, []byte(event.RangeTime))
@@ -52,12 +52,12 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 	// tags
 	tags := []ec2.Tag{}
 	tags = append(tags, ec2.Tag{
-		Key:   aws.String(scheduleTag),
+		Key:   aws.String(conf.ScheduleTag),
 		Value: aws.String(event.RangeTime),
 	})
 	if event.RangeWeekdays != "" {
 		tags = append(tags, ec2.Tag{
-			Key:   aws.String(scheduleTagDay),
+			Key:   aws.String(conf.ScheduleTagDay),
 			Value: aws.String(event.RangeWeekdays),
 		})
 	}

@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"html/template"
 	"log"
-	"os"
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/caarlos0/env/v6"
 )
 
 type inputEvent struct {
@@ -28,10 +28,13 @@ type instanceData struct {
 	ScheduleSNS     string
 }
 
-var scheduleTag = os.Getenv("SCHEDULE_TAG")
-var scheduleTagDay = os.Getenv("SCHEDULE_TAG_DAY")
-var scheduleTagSuspend = os.Getenv("SCHEDULE_TAG_SUSPEND")
-var scheduleTagSNS = os.Getenv("SCHEDULE_TAG_SNS")
+type config struct {
+	ScheduleTag        string `env:"SCHEDULE_TAG" envDefault:"Schedule"`
+	ScheduleTagDay     string `env:"SCHEDULE_TAG_DAY" envDefault:"ScheduleDay"`
+	ScheduleTagSuspend string `env:"SCHEDULE_TAG_SUSPEND" envDefault:"ScheduleSuspendUntil"`
+	ScheduleTagSNS     string `env:"SCHEDULE_TAG_SNS" envDefault:"ScheduleSNS"`
+}
+
 var teamsOutputTmpl = `{{ range . -}}
 ▸ **{{ .InstanceID }}** {{ if ne .InstanceName "" }}[{{ .InstanceName }}]{{ end }}
 State: {{ .State }}
@@ -52,18 +55,11 @@ func main() {
 }
 
 func handler(ctx context.Context, event inputEvent) (string, error) {
-	// CN regions don't support env variables
-	if scheduleTag == "" {
-		scheduleTag = "Schedule"
-	}
-	if scheduleTagDay == "" {
-		scheduleTagDay = "ScheduleDay"
-	}
-	if scheduleTagSuspend == "" {
-		scheduleTagSuspend = "ScheduleSuspendUntil"
-	}
-	if scheduleTagSNS == "" {
-		scheduleTagSNS = "ScheduleSNS"
+	// parse env variables
+	conf := &config{}
+	if err := env.Parse(conf); err != nil {
+		log.Printf("%s", err)
+		return "", err
 	}
 
 	cfg, err := external.LoadDefaultAWSConfig()
@@ -80,7 +76,7 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 			},
 			{
 				Name:   aws.String("tag-key"),
-				Values: []string{scheduleTag},
+				Values: []string{conf.ScheduleTag},
 			},
 			{
 				Name:   aws.String("tag:Name"),
@@ -107,19 +103,19 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 				d.InstanceName = *tag.Value
 			}
 
-			if *tag.Key == scheduleTag {
+			if *tag.Key == conf.ScheduleTag {
 				d.Schedule = *tag.Value
 			}
 
-			if *tag.Key == scheduleTagDay {
+			if *tag.Key == conf.ScheduleTagDay {
 				d.ScheduleDay = *tag.Value
 			}
 
-			if *tag.Key == scheduleTagSuspend {
+			if *tag.Key == conf.ScheduleTagSuspend {
 				d.ScheduleSuspend = *tag.Value
 			}
 
-			if *tag.Key == scheduleTagSNS {
+			if *tag.Key == conf.ScheduleTagSNS {
 				d.ScheduleSNS = *tag.Value
 			}
 		}

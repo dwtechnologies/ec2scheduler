@@ -8,7 +8,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"os"
 	"time"
 
 	"github.com/aws/aws-lambda-go/lambda"
@@ -16,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws/external"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/ec2iface"
+	"github.com/caarlos0/env/v6"
 )
 
 type inputEvent struct {
@@ -23,8 +23,11 @@ type inputEvent struct {
 	UnsuspendDatetime string `json:"unsuspendDatetime"`
 }
 
-var scheduleTag = os.Getenv("SCHEDULE_TAG")
-var scheduleTagSuspend = os.Getenv("SCHEDULE_TAG_SUSPEND")
+type config struct {
+	ScheduleTag        string `env:"SCHEDULE_TAG" envDefault:"Schedule"`
+	ScheduleTagSuspend string `env:"SCHEDULE_TAG_SUSPEND" envDefault:"ScheduleSuspendUntil"`
+}
+
 var scheduleTagSuspendLayouts = map[int]string{
 	4:  "2006",
 	6:  "200601",
@@ -38,12 +41,11 @@ func main() {
 }
 
 func handler(ctx context.Context, event inputEvent) (string, error) {
-	// CN regions don't support env variables
-	if scheduleTag == "" {
-		scheduleTag = "Schedule"
-	}
-	if scheduleTagSuspend == "" {
-		scheduleTagSuspend = "ScheduleSuspendUntil"
+	// parse env variables
+	conf := &config{}
+	if err := env.Parse(conf); err != nil {
+		log.Printf("%s", err)
+		return "", err
 	}
 
 	// parse suspend time
@@ -76,14 +78,14 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 	}
 
 	for _, tag := range resp.Reservations[0].Instances[0].Tags {
-		if *tag.Key == scheduleTag {
+		if *tag.Key == conf.ScheduleTag {
 			err = createTags(ctx, client, event.InstanceID, []ec2.Tag{
 				{
-					Key:   aws.String(scheduleTagSuspend),
+					Key:   aws.String(conf.ScheduleTagSuspend),
 					Value: aws.String(event.UnsuspendDatetime),
 				},
 				{
-					Key:   aws.String(scheduleTag),
+					Key:   aws.String(conf.ScheduleTag),
 					Value: aws.String(fmt.Sprintf("#%s", *tag.Value)),
 				},
 			})
@@ -96,8 +98,8 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 		}
 	}
 
-	log.Printf("[%s] unable to find %s tag", event.InstanceID, scheduleTag)
-	return fmt.Sprintf("unable to find %s tag for instance %s", scheduleTag, event.InstanceID), nil
+	log.Printf("[%s] unable to find %s tag", event.InstanceID, conf.ScheduleTag)
+	return fmt.Sprintf("unable to find %s tag for instance %s", conf.ScheduleTag, event.InstanceID), nil
 }
 
 func createTags(ctx context.Context, client ec2iface.ClientAPI, instanceID string, tags []ec2.Tag) error {

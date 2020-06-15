@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-	"os"
 	"strings"
 	"time"
 
@@ -16,36 +15,37 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/ec2/ec2iface"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
 	"github.com/aws/aws-sdk-go-v2/service/sns/snsiface"
+	"github.com/caarlos0/env/v6"
 )
 
 type scheduler struct {
 	instanceID    string
 	instanceName  string
 	instanceState ec2.InstanceStateName
-	snsTopicArn   string
-	startTime     time.Time
-	stopTime      time.Time
-	weekdays      []time.Weekday
+
+	snsTopicArn string
+
+	startTime time.Time
+	stopTime  time.Time
+	weekdays  []time.Weekday
 }
 
-var scheduleTag = os.Getenv("SCHEDULE_TAG")
-var scheduleTagDay = os.Getenv("SCHEDULE_TAG_DAY")
-var scheduleTagSNS = os.Getenv("SCHEDULE_TAG_SNS")
+type config struct {
+	ScheduleTag    string `env:"SCHEDULE_TAG" envDefault:"Schedule"`
+	ScheduleTagDay string `env:"SCHEDULE_TAG_DAY" envDefault:"ScheduleDay"`
+	ScheduleTagSNS string `env:"SCHEDULE_TAG_SNS" envDefault:"ScheduleSNS"`
+}
 
 func main() {
 	lambda.Start(handler)
 }
 
 func handler(ctx context.Context) error {
-	// CN regions don't support env variables
-	if scheduleTag == "" {
-		scheduleTag = "Schedule"
-	}
-	if scheduleTagDay == "" {
-		scheduleTagDay = "ScheduleDay"
-	}
-	if scheduleTagSNS == "" {
-		scheduleTagSNS = "ScheduleSNS"
+	// parse env variables
+	conf := &config{}
+	if err := env.Parse(conf); err != nil {
+		log.Printf("%s", err)
+		return err
 	}
 
 	cfg, err := external.LoadDefaultAWSConfig()
@@ -66,7 +66,7 @@ func handler(ctx context.Context) error {
 			{
 				Name: aws.String("tag-key"),
 				Values: []string{
-					scheduleTag,
+					conf.ScheduleTag,
 				},
 			},
 		},
@@ -80,7 +80,7 @@ func handler(ctx context.Context) error {
 		return nil
 	}
 
-	// outer loop Reservations
+	// outer loop Reservations (instances)
 	// inner loop instance.Tags
 	// resp.Reservations[i].Instances[0]
 	// ec2.DescribeInstancesOutput{Reservations: []ec2.RunInstancesOutput{Instances: []ec2.Instance{}}}
@@ -93,7 +93,7 @@ func handler(ctx context.Context) error {
 
 		for _, tag := range instance.Tags {
 			// scheduler disabled
-			if *tag.Key == scheduleTag && strings.Contains(*tag.Value, "#") {
+			if *tag.Key == conf.ScheduleTag && strings.Contains(*tag.Value, "#") {
 				log.Printf("[%s] scheduler is disabled", s.instanceID)
 				break
 			}
@@ -104,12 +104,12 @@ func handler(ctx context.Context) error {
 			}
 
 			// SNS topic Arn
-			if *tag.Key == scheduleTagSNS {
+			if *tag.Key == conf.ScheduleTagSNS {
 				s.snsTopicArn = *tag.Value
 			}
 
 			// get start and stop time from scheduleTag
-			if *tag.Key == scheduleTag {
+			if *tag.Key == conf.ScheduleTag {
 				startStopTime := strings.Split(*tag.Value, "-")
 				s.startTime, err = time.Parse("15:04", startStopTime[0])
 				if err != nil {
@@ -124,10 +124,10 @@ func handler(ctx context.Context) error {
 			}
 
 			// get week days from scheduleTagDay
-			if *tag.Key == scheduleTagDay {
+			if *tag.Key == conf.ScheduleTagDay {
 				err := json.Unmarshal([]byte(fmt.Sprintf("[%s]", *tag.Value)), &s.weekdays)
 				if err != nil {
-					log.Printf("[%s] unable to unmarshal %s: %s", s.instanceID, scheduleTagDay, *tag.Value)
+					log.Printf("[%s] unable to unmarshal %s: %s", s.instanceID, conf.ScheduleTagDay, *tag.Value)
 				}
 			}
 		}
@@ -151,6 +151,8 @@ func handler(ctx context.Context) error {
 
 			log.Printf("[%s] notify %s of state change", s.instanceID, s.snsTopicArn)
 		}
+
+		log.Printf("\n")
 	}
 
 	return nil
@@ -216,15 +218,14 @@ func (s *scheduler) shouldRunDay(weekday time.Weekday) bool {
 // return instance state and a possible error
 func (s *scheduler) fixInstanceState(ctx context.Context, client ec2iface.ClientAPI, expectedState ec2.InstanceStateName) (ec2.InstanceStateName, error) {
 	if s.instanceState == expectedState {
-		log.Printf("[%s] nothing to do", s.instanceID)
+		log.Printf("[%s] instance %s. Nothing to do", s.instanceID, s.instanceState)
 		return "", nil
 	}
 
 	if expectedState == ec2.InstanceStateNameRunning {
-		_, err := client.StartInstancesRequest(&ec2.StartInstancesInput{
+		if _, err := client.StartInstancesRequest(&ec2.StartInstancesInput{
 			InstanceIds: []string{s.instanceID},
-		}).Send(ctx)
-		if err != nil {
+		}).Send(ctx); err != nil {
 			return "", err
 		}
 
@@ -233,10 +234,9 @@ func (s *scheduler) fixInstanceState(ctx context.Context, client ec2iface.Client
 	}
 
 	if expectedState == ec2.InstanceStateNameStopped {
-		_, err := client.StopInstancesRequest(&ec2.StopInstancesInput{
+		if _, err := client.StopInstancesRequest(&ec2.StopInstancesInput{
 			InstanceIds: []string{s.instanceID},
-		}).Send(ctx)
-		if err != nil {
+		}).Send(ctx); err != nil {
 			return "", err
 		}
 
