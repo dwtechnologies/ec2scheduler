@@ -14,16 +14,20 @@ import (
 
 type mockAWSClient struct {
 	ec2iface.ClientAPI
-	createTagsResponse *ec2.CreateTagsOutput
-	createTagsError    error
+	createTagsOutput *ec2.CreateTagsOutput
+	createTagsError  error
 }
+
+const instanceID = "i-07d023c826d243165"
 
 func (m *mockAWSClient) CreateTagsRequest(input *ec2.CreateTagsInput) ec2.CreateTagsRequest {
 	return ec2.CreateTagsRequest{
 		Request: &aws.Request{
-			Data:        m.createTagsResponse,
-			Error:       m.createTagsError,
+			Data:  m.createTagsOutput,
+			Error: m.createTagsError,
+
 			HTTPRequest: &http.Request{},
+			Retryer:     aws.NoOpRetryer{},
 		},
 	}
 }
@@ -39,7 +43,7 @@ func TestDisableScheduler(t *testing.T) {
 		{
 			name:        "disable scheduler",
 			awsClient:   &mockAWSClient{},
-			instanceID:  "i-07d023c826d243165",
+			instanceID:  instanceID,
 			scheduleTag: "#13:00-14:00",
 		},
 		{
@@ -47,7 +51,7 @@ func TestDisableScheduler(t *testing.T) {
 			awsClient: &mockAWSClient{
 				createTagsError: fmt.Errorf("error creating tags"),
 			},
-			instanceID:  "i-07d023c826d243165",
+			instanceID:  instanceID,
 			scheduleTag: "#13:00-14:00",
 			err:         true,
 		},
