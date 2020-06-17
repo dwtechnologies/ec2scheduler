@@ -80,7 +80,7 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 			},
 			{
 				Name:   aws.String("tag:Name"),
-				Values: []string{fmt.Sprintf("%s*", event.Filter)},
+				Values: []string{fmt.Sprintf("*%s*", event.Filter)},
 			},
 		},
 	}).Send(ctx)
