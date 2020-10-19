@@ -87,7 +87,7 @@ func TestShouldRunDay(t *testing.T) {
 		{
 			name: "weekdays defined - Mon,Wed,Thu",
 			sch: &scheduler{
-				instanceID: "i-07d023c826d243165",
+				instanceID: instanceID,
 				weekdays:   []time.Weekday{1, 3, 5},
 			},
 			weekday: time.Monday,
@@ -96,7 +96,7 @@ func TestShouldRunDay(t *testing.T) {
 		{
 			name: "weekdays defined - wrong day",
 			sch: &scheduler{
-				instanceID: "i-07d023c826d243165",
+				instanceID: instanceID,
 				weekdays:   []time.Weekday{1, 3, 5},
 			},
 			weekday: time.Tuesday,
@@ -122,9 +122,21 @@ func TestShouldRun(t *testing.T) {
 		want    ec2.InstanceStateName
 	}{
 		{
+			name: "weekend and scheduler suspended",
+			sch: &scheduler{
+				instanceID:    instanceID,
+				instanceState: ec2.InstanceStateNameRunning,
+				suspended:     true,
+			},
+			dateNow: time.Date(2019, 01, 06, 00, 00, 00, 00, time.UTC), // Sunday
+			timeNow: time.Date(0000, 01, 01, 00, 00, 00, 00, time.UTC), // Sunday
+			want:    ec2.InstanceStateNameRunning,
+		},
+
+		{
 			name: "weekend",
 			sch: &scheduler{
-				instanceID: "i-07d023c826d243165",
+				instanceID: instanceID,
 				startTime:  time.Date(0000, 01, 01, 8, 00, 00, 00, time.UTC),
 				stopTime:   time.Date(0000, 01, 01, 19, 00, 00, 00, time.UTC),
 			},
@@ -135,7 +147,7 @@ func TestShouldRun(t *testing.T) {
 		{
 			name: "startTime:stopTime same day",
 			sch: &scheduler{
-				instanceID: "i-07d023c826d243165",
+				instanceID: instanceID,
 				startTime:  time.Date(0000, 01, 0, 8, 00, 00, 00, time.UTC),
 				stopTime:   time.Date(0000, 01, 03, 19, 00, 00, 00, time.UTC),
 			},
@@ -145,7 +157,7 @@ func TestShouldRun(t *testing.T) {
 		{
 			name: "startTime:stopTime same day - out of range",
 			sch: &scheduler{
-				instanceID: "i-07d023c826d243165",
+				instanceID: instanceID,
 				startTime:  time.Date(0000, 01, 01, 8, 00, 00, 00, time.UTC),
 				stopTime:   time.Date(0000, 01, 01, 19, 00, 00, 00, time.UTC),
 			},
@@ -155,7 +167,7 @@ func TestShouldRun(t *testing.T) {
 		{
 			name: "startTime:stopTime between days - before midnight",
 			sch: &scheduler{
-				instanceID: "i-07d023c826d243165",
+				instanceID: instanceID,
 				startTime:  time.Date(0000, 01, 01, 19, 00, 00, 00, time.UTC),
 				stopTime:   time.Date(0000, 01, 01, 7, 30, 00, 00, time.UTC),
 			},
@@ -165,7 +177,7 @@ func TestShouldRun(t *testing.T) {
 		{
 			name: "startTime:stopTime between days - after midnight",
 			sch: &scheduler{
-				instanceID: "i-07d023c826d243165",
+				instanceID: instanceID,
 				startTime:  time.Date(0000, 01, 01, 19, 00, 00, 00, time.UTC),
 				stopTime:   time.Date(0000, 01, 01, 7, 30, 00, 00, time.UTC),
 			},
@@ -175,7 +187,7 @@ func TestShouldRun(t *testing.T) {
 		{
 			name: "startTime:stopTime between days - out of range",
 			sch: &scheduler{
-				instanceID: "i-07d023c826d243165",
+				instanceID: instanceID,
 				startTime:  time.Date(0000, 01, 01, 19, 00, 00, 00, time.UTC),
 				stopTime:   time.Date(0000, 01, 01, 7, 30, 00, 00, time.UTC),
 			},
