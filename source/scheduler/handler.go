@@ -23,11 +23,12 @@ type scheduler struct {
 	instanceName  string
 	instanceState ec2.InstanceStateName
 
-	snsTopicArn string
-
+	suspended bool
 	startTime time.Time
 	stopTime  time.Time
 	weekdays  []time.Weekday
+
+	snsTopicArn string
 }
 
 type config struct {
@@ -92,9 +93,9 @@ func handler(ctx context.Context) error {
 		}
 
 		for _, tag := range instance.Tags {
-			// scheduler disabled
+			// scheduler suspended
 			if *tag.Key == conf.ScheduleTag && strings.Contains(*tag.Value, "#") {
-				log.Printf("[%s] scheduler is disabled", s.instanceID)
+				s.suspended = true
 				break
 			}
 
@@ -167,6 +168,12 @@ func (s *scheduler) shouldRun(dateNow, timeNow time.Time) ec2.InstanceStateName 
 	log.Printf("[%s] weekday: %s", s.instanceID, dateNow.Weekday())
 	log.Printf("[%s] start time: %d:%d", s.instanceID, s.startTime.Hour(), s.startTime.Minute())
 	log.Printf("[%s] stop time: %d:%d", s.instanceID, s.stopTime.Hour(), s.stopTime.Minute())
+
+	// scheduler suspended
+	if s.suspended {
+		log.Printf("[%s] scheduler is suspended", s.instanceID)
+		return s.instanceState
+	}
 
 	// should not run today
 	if !s.shouldRunDay(dateNow.Weekday()) {
