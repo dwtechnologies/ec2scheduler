@@ -8,9 +8,9 @@ import (
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/aws/external"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/ec2iface"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/caarlos0/env/v6"
 )
 
@@ -20,7 +20,7 @@ type inputEvent struct {
 	RangeWeekdays string `json:"rangeWeekdays"`
 }
 
-type config struct {
+type lambdaConfig struct {
 	ScheduleTag    string `env:"SCHEDULE_TAG" envDefault:"Schedule"`
 	ScheduleTagDay string `env:"SCHEDULE_TAG_DAY" envDefault:"ScheduleDay"`
 }
@@ -33,7 +33,7 @@ func main() {
 
 func handler(ctx context.Context, event inputEvent) (string, error) {
 	// parse env variables
-	conf := &config{}
+	conf := &lambdaConfig{}
 	if err := env.Parse(conf); err != nil {
 		log.Printf("%s", err)
 		return "", err
@@ -50,23 +50,23 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 	}
 
 	// tags
-	tags := []ec2.Tag{}
-	tags = append(tags, ec2.Tag{
+	tags := []*types.Tag{}
+	tags = append(tags, &types.Tag{
 		Key:   aws.String(conf.ScheduleTag),
 		Value: aws.String(event.RangeTime),
 	})
 	if event.RangeWeekdays != "" {
-		tags = append(tags, ec2.Tag{
+		tags = append(tags, &types.Tag{
 			Key:   aws.String(conf.ScheduleTagDay),
 			Value: aws.String(event.RangeWeekdays),
 		})
 	}
 
-	cfg, err := external.LoadDefaultAWSConfig()
+	cfg, err := config.LoadDefaultConfig()
 	if err != nil {
 		return "", err
 	}
-	client := ec2.New(cfg)
+	client := ec2.NewFromConfig(cfg)
 
 	// set tags
 	err = createTags(ctx, client, event.InstanceID, tags)
@@ -78,11 +78,11 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 	return fmt.Sprintf("scheduler set for instance %s: %s", event.InstanceID, event.RangeTime), nil
 }
 
-func createTags(ctx context.Context, client ec2iface.ClientAPI, instanceID string, tags []ec2.Tag) error {
-	_, err := client.CreateTagsRequest(&ec2.CreateTagsInput{
-		Resources: []string{instanceID},
+func createTags(ctx context.Context, client *ec2.Client, instanceID string, tags []*types.Tag) error {
+	_, err := client.CreateTags(ctx, &ec2.CreateTagsInput{
+		Resources: []*string{aws.String(instanceID)},
 		Tags:      tags,
-	}).Send(ctx)
+	})
 	if err != nil {
 		return err
 	}
