@@ -8,13 +8,13 @@ import (
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/aws/external"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/ec2iface"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/caarlos0/env/v6"
 )
 
-type config struct {
+type lambdaConfig struct {
 	ScheduleTag        string `env:"SCHEDULE_TAG" envDefault:"Schedule"`
 	ScheduleTagSuspend string `env:"SCHEDULE_TAG_SUSPEND" envDefault:"ScheduleSuspendUntil"`
 }
@@ -33,30 +33,30 @@ func main() {
 
 func handler(ctx context.Context) error {
 	// parse env variables
-	conf := &config{}
+	conf := &lambdaConfig{}
 	if err := env.Parse(conf); err != nil {
 		log.Printf("%s", err)
 		return err
 	}
 
-	cfg, err := external.LoadDefaultAWSConfig()
+	cfg, err := config.LoadDefaultConfig()
 	if err != nil {
 		return err
 	}
-	client := ec2.New(cfg)
+	client := ec2.NewFromConfig(cfg)
 
-	resp, err := client.DescribeInstancesRequest(&ec2.DescribeInstancesInput{
-		Filters: []ec2.Filter{
+	resp, err := client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
+		Filters: []*types.Filter{
 			{
 				Name:   aws.String("instance-state-name"),
-				Values: []string{"running", "stopped"},
+				Values: []*string{aws.String("running"), aws.String("stopped")},
 			},
 			{
 				Name:   aws.String("tag-key"),
-				Values: []string{conf.ScheduleTagSuspend},
+				Values: []*string{aws.String(conf.ScheduleTagSuspend)},
 			},
 		},
-	}).Send(ctx)
+	})
 	if err != nil {
 		return err
 	}
@@ -96,7 +96,7 @@ func handler(ctx context.Context) error {
 			}
 
 			// uncomment scheduleTag
-			err = createTags(ctx, client, *instance.InstanceId, []ec2.Tag{
+			err = createTags(ctx, client, *instance.InstanceId, []*types.Tag{
 				{
 					Key:   aws.String(conf.ScheduleTag),
 					Value: aws.String(strings.Replace(tags[conf.ScheduleTag], "#", "", -1)),
@@ -112,15 +112,15 @@ func handler(ctx context.Context) error {
 	return nil
 }
 
-func deleteSuspendTag(ctx context.Context, client ec2iface.ClientAPI, tag, instanceID string) error {
-	_, err := client.DeleteTagsRequest(&ec2.DeleteTagsInput{
-		Resources: []string{instanceID},
-		Tags: []ec2.Tag{
+func deleteSuspendTag(ctx context.Context, client *ec2.Client, tag, instanceID string) error {
+	_, err := client.DeleteTags(ctx, &ec2.DeleteTagsInput{
+		Resources: []*string{aws.String(instanceID)},
+		Tags: []*types.Tag{
 			{
 				Key: aws.String(tag),
 			},
 		},
-	}).Send(ctx)
+	})
 	if err != nil {
 		return err
 	}
@@ -128,11 +128,11 @@ func deleteSuspendTag(ctx context.Context, client ec2iface.ClientAPI, tag, insta
 	return nil
 }
 
-func createTags(ctx context.Context, client ec2iface.ClientAPI, instanceID string, tags []ec2.Tag) error {
-	_, err := client.CreateTagsRequest(&ec2.CreateTagsInput{
-		Resources: []string{instanceID},
+func createTags(ctx context.Context, client *ec2.Client, instanceID string, tags []*types.Tag) error {
+	_, err := client.CreateTags(ctx, &ec2.CreateTagsInput{
+		Resources: []*string{aws.String(instanceID)},
 		Tags:      tags,
-	}).Send(ctx)
+	})
 	if err != nil {
 		return err
 	}
