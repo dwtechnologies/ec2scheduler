@@ -3,53 +3,50 @@ package main
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/ec2iface"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/stretchr/testify/assert"
 )
 
-type mockAWSClient struct {
-	ec2iface.ClientAPI
-	createTagsOutput *ec2.CreateTagsOutput
-	createTagsError  error
+var _ ec2ClientAPI = (*mockEC2client)(nil)
+
+type mockEC2client struct {
+	err error
 }
 
 const instanceID = "i-07d023c826d243165"
 
-func (m *mockAWSClient) CreateTagsRequest(input *ec2.CreateTagsInput) ec2.CreateTagsRequest {
-	return ec2.CreateTagsRequest{
-		Request: &aws.Request{
-			Data:  m.createTagsOutput,
-			Error: m.createTagsError,
+func (m *mockEC2client) DescribeInstances(ctx context.Context, params *ec2.DescribeInstancesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error) {
+	return &ec2.DescribeInstancesOutput{
+		Reservations: []*types.Reservation{},
+	}, m.err
+}
 
-			HTTPRequest: &http.Request{},
-			Retryer:     aws.NoOpRetryer{},
-		},
-	}
+func (m *mockEC2client) CreateTags(ctx context.Context, params *ec2.CreateTagsInput, optFns ...func(*ec2.Options)) (*ec2.CreateTagsOutput, error) {
+	return &ec2.CreateTagsOutput{}, m.err
 }
 
 func TestDisableScheduler(t *testing.T) {
 	tests := []struct {
 		name        string
-		awsClient   *mockAWSClient
+		client      *mockEC2client
 		instanceID  string
 		scheduleTag string
 		err         bool
 	}{
 		{
 			name:        "disable scheduler",
-			awsClient:   &mockAWSClient{},
+			client:      &mockEC2client{},
 			instanceID:  instanceID,
 			scheduleTag: "#13:00-14:00",
 		},
 		{
 			name: "disable scheduler error",
-			awsClient: &mockAWSClient{
-				createTagsError: fmt.Errorf("error creating tags"),
+			client: &mockEC2client{
+				err: fmt.Errorf("error creating tags"),
 			},
 			instanceID:  instanceID,
 			scheduleTag: "#13:00-14:00",
@@ -59,7 +56,7 @@ func TestDisableScheduler(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := createTags(context.Background(), test.awsClient, test.instanceID, []ec2.Tag{{Key: aws.String("Schedule"), Value: aws.String(test.scheduleTag)}})
+			err := createTags(context.Background(), test.client, test.instanceID, []*types.Tag{{Key: aws.String("Schedule"), Value: aws.String(test.scheduleTag)}})
 
 			if test.err {
 				assert.Error(t, err)

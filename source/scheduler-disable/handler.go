@@ -12,9 +12,9 @@ import (
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/aws/external"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/ec2iface"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/caarlos0/env/v6"
 )
 
@@ -22,8 +22,13 @@ type inputEvent struct {
 	InstanceID string `json:"instanceId"`
 }
 
-type config struct {
+type lambdaConfig struct {
 	ScheduleTag string `env:"SCHEDULE_TAG" envDefault:"Schedule"`
+}
+
+type ec2ClientAPI interface {
+	DescribeInstances(ctx context.Context, params *ec2.DescribeInstancesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error)
+	CreateTags(ctx context.Context, params *ec2.CreateTagsInput, optFns ...func(*ec2.Options)) (*ec2.CreateTagsOutput, error)
 }
 
 func main() {
@@ -32,26 +37,23 @@ func main() {
 
 func handler(ctx context.Context, event inputEvent) (string, error) {
 	// parse env variables
-	conf := &config{}
+	conf := &lambdaConfig{}
 	if err := env.Parse(conf); err != nil {
 		log.Printf("%s", err)
 		return "", err
 	}
 
-	cfg, err := external.LoadDefaultAWSConfig()
+	cfg, err := config.LoadDefaultConfig()
 	if err != nil {
 		return "", err
 	}
 
-	client := ec2.New(cfg)
+	client := ec2.NewFromConfig(cfg)
 
-	resp, err := client.DescribeInstancesRequest(&ec2.DescribeInstancesInput{
-		InstanceIds: []string{event.InstanceID},
-	}).Send(ctx)
+	resp, err := describeInstances(ctx, client, event.InstanceID)
 	if err != nil {
 		return "", err
 	}
-
 	if len(resp.Reservations) < 1 {
 		log.Printf("[%s] no instance found", event.InstanceID)
 		return "", nil
@@ -65,7 +67,7 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 			}
 
 			// disable scheduler
-			err := createTags(ctx, client, event.InstanceID, []ec2.Tag{
+			err := createTags(ctx, client, event.InstanceID, []*types.Tag{
 				{
 					Key:   aws.String(conf.ScheduleTag),
 					Value: aws.String(fmt.Sprintf("#%s", conf.ScheduleTag)),
@@ -82,14 +84,25 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 	return fmt.Sprintf("instance scheduler for %s disabled", event.InstanceID), nil
 }
 
-func createTags(ctx context.Context, client ec2iface.ClientAPI, instanceID string, tags []ec2.Tag) error {
-	_, err := client.CreateTagsRequest(&ec2.CreateTagsInput{
-		Resources: []string{instanceID},
+func createTags(ctx context.Context, client ec2ClientAPI, instanceID string, tags []*types.Tag) error {
+	_, err := client.CreateTags(ctx, &ec2.CreateTagsInput{
+		Resources: []*string{aws.String(instanceID)},
 		Tags:      tags,
-	}).Send(ctx)
+	})
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func describeInstances(ctx context.Context, client ec2ClientAPI, instanceID string) (*ec2.DescribeInstancesOutput, error) {
+	resp, err := client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
+		InstanceIds: []*string{aws.String(instanceID)},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return resp, nil
 }

@@ -10,18 +10,17 @@ import (
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/aws/external"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
-	"github.com/aws/aws-sdk-go-v2/service/ec2/ec2iface"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/aws/aws-sdk-go-v2/service/sns"
-	"github.com/aws/aws-sdk-go-v2/service/sns/snsiface"
 	"github.com/caarlos0/env/v6"
 )
 
 type scheduler struct {
 	instanceID    string
 	instanceName  string
-	instanceState ec2.InstanceStateName
+	instanceState types.InstanceStateName
 
 	suspended bool
 	startTime time.Time
@@ -31,10 +30,18 @@ type scheduler struct {
 	snsTopicArn string
 }
 
-type config struct {
+type lambdaConfig struct {
 	ScheduleTag    string `env:"SCHEDULE_TAG" envDefault:"Schedule"`
 	ScheduleTagDay string `env:"SCHEDULE_TAG_DAY" envDefault:"ScheduleDay"`
 	ScheduleTagSNS string `env:"SCHEDULE_TAG_SNS" envDefault:"ScheduleSNS"`
+}
+
+type ec2ClientAPI interface {
+	// DescribeInstances(ctx context.Context, params *ec2.DescribeInstancesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error)
+	// CreateTags(ctx context.Context, params *ec2.CreateTagsInput, optFns ...func(*ec2.Options)) (*ec2.CreateTagsOutput, error)
+
+	StartInstances(ctx context.Context, params *ec2.StartInstancesInput, optFns ...func(*ec2.Options)) (*ec2.StartInstancesOutput, error)
+	StopInstances(ctx context.Context, params *ec2.StopInstancesInput, optFns ...func(*ec2.Options)) (*ec2.StopInstancesOutput, error)
 }
 
 func main() {
@@ -43,35 +50,35 @@ func main() {
 
 func handler(ctx context.Context) error {
 	// parse env variables
-	conf := &config{}
+	conf := &lambdaConfig{}
 	if err := env.Parse(conf); err != nil {
 		log.Printf("%s", err)
 		return err
 	}
 
-	cfg, err := external.LoadDefaultAWSConfig()
+	cfg, err := config.LoadDefaultConfig()
 	if err != nil {
 		return err
 	}
-	client := ec2.New(cfg)
+	client := ec2.NewFromConfig(cfg)
 
-	resp, err := client.DescribeInstancesRequest(&ec2.DescribeInstancesInput{
-		Filters: []ec2.Filter{
+	resp, err := client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
+		Filters: []*types.Filter{
 			{
 				Name: aws.String("instance-state-name"),
-				Values: []string{
-					"running",
-					"stopped",
+				Values: []*string{
+					aws.String("running"),
+					aws.String("stopped"),
 				},
 			},
 			{
 				Name: aws.String("tag-key"),
-				Values: []string{
-					conf.ScheduleTag,
+				Values: []*string{
+					aws.String(conf.ScheduleTag),
 				},
 			},
 		},
-	}).Send(ctx)
+	})
 	if err != nil {
 		return err
 	}
@@ -143,7 +150,7 @@ func handler(ctx context.Context) error {
 
 		// publish state changes to SNS topic
 		if s.snsTopicArn != "" && stateChange != "" {
-			client := sns.New(cfg)
+			client := sns.NewFromConfig(cfg)
 
 			err := s.publishStateChange(client, stateChange)
 			if err != nil {
@@ -162,7 +169,7 @@ func handler(ctx context.Context) error {
 // splitting time and date logic
 // dateNow contains information regarding current date and time
 // timeNow contains information regarding current time (null value for YYYY, mm, dd)
-func (s *scheduler) shouldRun(dateNow, timeNow time.Time) ec2.InstanceStateName {
+func (s *scheduler) shouldRun(dateNow, timeNow time.Time) types.InstanceStateName {
 	// logging
 	log.Printf("[%s] time now: %d:%d", s.instanceID, timeNow.Hour(), timeNow.Minute())
 	log.Printf("[%s] weekday: %s", s.instanceID, dateNow.Weekday())
@@ -178,29 +185,29 @@ func (s *scheduler) shouldRun(dateNow, timeNow time.Time) ec2.InstanceStateName 
 	// should not run today
 	if !s.shouldRunDay(dateNow.Weekday()) {
 		log.Printf("[%s] should not run on %s", s.instanceID, dateNow.Weekday())
-		return ec2.InstanceStateNameStopped
+		return types.InstanceStateNameStopped
 	}
 
 	// startTime-stopTime same day (07:00-19:30)
 	if s.startTime.Before(s.stopTime) {
 		if timeNow.After(s.startTime) && timeNow.Before(s.stopTime) {
-			return ec2.InstanceStateNameRunning
+			return types.InstanceStateNameRunning
 		}
 
-		return ec2.InstanceStateNameStopped
+		return types.InstanceStateNameStopped
 	}
 
 	// startTime-stopTime between days (22:00-03:00 = 22:00-23:59,00:00-03:00)
 	// startTime-midnight
 	if timeNow.After(s.startTime) && timeNow.Before(time.Date(0000, 01, 01, 23, 59, 00, 00, time.UTC)) {
-		return ec2.InstanceStateNameRunning
+		return types.InstanceStateNameRunning
 	}
 	// midnight-stopTime
 	if timeNow.After(time.Date(0000, 01, 01, 00, 00, 00, 00, time.UTC)) && timeNow.Before(s.stopTime) {
-		return ec2.InstanceStateNameRunning
+		return types.InstanceStateNameRunning
 	}
 
-	return ec2.InstanceStateNameStopped
+	return types.InstanceStateNameStopped
 }
 
 // check if instance should run based on day of the week
@@ -223,42 +230,42 @@ func (s *scheduler) shouldRunDay(weekday time.Weekday) bool {
 
 // fix instance state - start or stop
 // return instance state and a possible error
-func (s *scheduler) fixInstanceState(ctx context.Context, client ec2iface.ClientAPI, expectedState ec2.InstanceStateName) (ec2.InstanceStateName, error) {
+func (s *scheduler) fixInstanceState(ctx context.Context, client ec2ClientAPI, expectedState types.InstanceStateName) (types.InstanceStateName, error) {
 	if s.instanceState == expectedState {
 		log.Printf("[%s] instance %s. Nothing to do", s.instanceID, s.instanceState)
 		return "", nil
 	}
 
-	if expectedState == ec2.InstanceStateNameRunning {
-		if _, err := client.StartInstancesRequest(&ec2.StartInstancesInput{
-			InstanceIds: []string{s.instanceID},
-		}).Send(ctx); err != nil {
+	if expectedState == types.InstanceStateNameRunning {
+		if _, err := client.StartInstances(ctx, &ec2.StartInstancesInput{
+			InstanceIds: []*string{aws.String(s.instanceID)},
+		}); err != nil {
 			return "", err
 		}
 
-		log.Printf("[%s] state changed to %s", s.instanceID, ec2.InstanceStateNameRunning)
-		return ec2.InstanceStateNameRunning, nil
+		log.Printf("[%s] state changed to %s", s.instanceID, types.InstanceStateNameRunning)
+		return types.InstanceStateNameRunning, nil
 	}
 
-	if expectedState == ec2.InstanceStateNameStopped {
-		if _, err := client.StopInstancesRequest(&ec2.StopInstancesInput{
-			InstanceIds: []string{s.instanceID},
-		}).Send(ctx); err != nil {
+	if expectedState == types.InstanceStateNameStopped {
+		if _, err := client.StopInstances(ctx, &ec2.StopInstancesInput{
+			InstanceIds: []*string{aws.String(s.instanceID)},
+		}); err != nil {
 			return "", err
 		}
 
-		log.Printf("[%s] state changed to %s", s.instanceID, ec2.InstanceStateNameStopped)
-		return ec2.InstanceStateNameStopped, nil
+		log.Printf("[%s] state changed to %s", s.instanceID, types.InstanceStateNameStopped)
+		return types.InstanceStateNameStopped, nil
 	}
 
 	return "", nil
 }
 
-func (s *scheduler) publishStateChange(client snsiface.ClientAPI, stateChange ec2.InstanceStateName) error {
-	_, err := client.PublishRequest(&sns.PublishInput{
+func (s *scheduler) publishStateChange(client *sns.Client, stateChange types.InstanceStateName) error {
+	_, err := client.Publish(context.Background(), &sns.PublishInput{
 		Message:  aws.String(fmt.Sprintf("%s (%s) state changed to %s", s.instanceID, s.instanceName, stateChange)),
 		TopicArn: aws.String(s.snsTopicArn),
-	}).Send(context.Background())
+	})
 	if err != nil {
 		return err
 	}
