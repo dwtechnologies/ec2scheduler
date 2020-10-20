@@ -9,8 +9,9 @@ import (
 
 	"github.com/aws/aws-lambda-go/lambda"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/aws/external"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/caarlos0/env/v6"
 )
 
@@ -28,7 +29,7 @@ type instanceData struct {
 	ScheduleSNS     string
 }
 
-type config struct {
+type lambdaConfig struct {
 	ScheduleTag        string `env:"SCHEDULE_TAG" envDefault:"Schedule"`
 	ScheduleTagDay     string `env:"SCHEDULE_TAG_DAY" envDefault:"ScheduleDay"`
 	ScheduleTagSuspend string `env:"SCHEDULE_TAG_SUSPEND" envDefault:"ScheduleSuspendUntil"`
@@ -56,34 +57,34 @@ func main() {
 
 func handler(ctx context.Context, event inputEvent) (string, error) {
 	// parse env variables
-	conf := &config{}
+	conf := &lambdaConfig{}
 	if err := env.Parse(conf); err != nil {
 		log.Printf("%s", err)
 		return "", err
 	}
 
-	cfg, err := external.LoadDefaultAWSConfig()
+	cfg, err := config.LoadDefaultConfig()
 	if err != nil {
 		return "", err
 	}
-	client := ec2.New(cfg)
+	client := ec2.NewFromConfig(cfg)
 
-	resp, err := client.DescribeInstancesRequest(&ec2.DescribeInstancesInput{
-		Filters: []ec2.Filter{
+	resp, err := client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
+		Filters: []*types.Filter{
 			{
 				Name:   aws.String("instance-state-name"),
-				Values: []string{"running", "stopped"},
+				Values: []*string{aws.String("running"), aws.String("stopped")},
 			},
 			{
 				Name:   aws.String("tag-key"),
-				Values: []string{conf.ScheduleTag},
+				Values: []*string{aws.String(conf.ScheduleTag)},
 			},
 			{
 				Name:   aws.String("tag:Name"),
-				Values: []string{fmt.Sprintf("*%s*", event.Filter)},
+				Values: []*string{aws.String(fmt.Sprintf("*%s*", event.Filter))},
 			},
 		},
-	}).Send(ctx)
+	})
 
 	if len(resp.Reservations) < 1 {
 		log.Printf("no scheduled instances")
