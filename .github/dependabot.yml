@@ -2,7 +2,38 @@ version: 2
 
 updates:
   - package-ecosystem: "gomod"
-    directory: "/"
+    directory: "/source/scheduler"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "gomod"
+    directory: "/source/scheduler-disable"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "gomod"
+    directory: "/source/scheduler-set"
+      "disable"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "gomod"
+    directory: "/source/scheduler-status"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "gomod"
+    directory: "/source/scheduler-suspend"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "gomod"
+    directory: "/source/scheduler-suspend-mon"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "gomod"
+    directory: "/source/scheduler-suspend-unsuspend"
     schedule:
       interval: "weekly"
 
