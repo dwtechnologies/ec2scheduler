@@ -50,19 +50,19 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 	}
 
 	// tags
-	tags := []*types.Tag{}
-	tags = append(tags, &types.Tag{
+	tags := []types.Tag{}
+	tags = append(tags, types.Tag{
 		Key:   aws.String(conf.ScheduleTag),
 		Value: aws.String(event.RangeTime),
 	})
 	if event.RangeWeekdays != "" {
-		tags = append(tags, &types.Tag{
+		tags = append(tags, types.Tag{
 			Key:   aws.String(conf.ScheduleTagDay),
 			Value: aws.String(event.RangeWeekdays),
 		})
 	}
 
-	cfg, err := config.LoadDefaultConfig()
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -78,9 +78,9 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 	return fmt.Sprintf("scheduler set for instance %s: %s", event.InstanceID, event.RangeTime), nil
 }
 
-func createTags(ctx context.Context, client *ec2.Client, instanceID string, tags []*types.Tag) error {
+func createTags(ctx context.Context, client *ec2.Client, instanceID string, tags []types.Tag) error {
 	_, err := client.CreateTags(ctx, &ec2.CreateTagsInput{
-		Resources: []*string{aws.String(instanceID)},
+		Resources: []string{instanceID},
 		Tags:      tags,
 	})
 	if err != nil {

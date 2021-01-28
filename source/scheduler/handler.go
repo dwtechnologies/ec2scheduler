@@ -56,25 +56,25 @@ func handler(ctx context.Context) error {
 		return err
 	}
 
-	cfg, err := config.LoadDefaultConfig()
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return err
 	}
 	client := ec2.NewFromConfig(cfg)
 
 	resp, err := client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
-		Filters: []*types.Filter{
+		Filters: []types.Filter{
 			{
 				Name: aws.String("instance-state-name"),
-				Values: []*string{
-					aws.String("running"),
-					aws.String("stopped"),
+				Values: []string{
+					"running",
+					"stopped",
 				},
 			},
 			{
 				Name: aws.String("tag-key"),
-				Values: []*string{
-					aws.String(conf.ScheduleTag),
+				Values: []string{
+					conf.ScheduleTag,
 				},
 			},
 		},
@@ -238,7 +238,7 @@ func (s *scheduler) fixInstanceState(ctx context.Context, client ec2ClientAPI, e
 
 	if expectedState == types.InstanceStateNameRunning {
 		if _, err := client.StartInstances(ctx, &ec2.StartInstancesInput{
-			InstanceIds: []*string{aws.String(s.instanceID)},
+			InstanceIds: []string{s.instanceID},
 		}); err != nil {
 			return "", err
 		}
@@ -249,7 +249,7 @@ func (s *scheduler) fixInstanceState(ctx context.Context, client ec2ClientAPI, e
 
 	if expectedState == types.InstanceStateNameStopped {
 		if _, err := client.StopInstances(ctx, &ec2.StopInstancesInput{
-			InstanceIds: []*string{aws.String(s.instanceID)},
+			InstanceIds: []string{s.instanceID},
 		}); err != nil {
 			return "", err
 		}

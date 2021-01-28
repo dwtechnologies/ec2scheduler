@@ -59,14 +59,14 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 		return fmt.Sprintf("unable to parse date: %s", event.UnsuspendDatetime), nil
 	}
 
-	cfg, err := config.LoadDefaultConfig()
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return "", err
 	}
 	client := ec2.NewFromConfig(cfg)
 
 	resp, err := client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
-		InstanceIds: []*string{aws.String(event.InstanceID)},
+		InstanceIds: []string{event.InstanceID},
 	})
 	if err != nil {
 		return "", err
@@ -79,7 +79,7 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 
 	for _, tag := range resp.Reservations[0].Instances[0].Tags {
 		if *tag.Key == conf.ScheduleTag {
-			err = createTags(ctx, client, event.InstanceID, []*types.Tag{
+			err = createTags(ctx, client, event.InstanceID, []types.Tag{
 				{
 					Key:   aws.String(conf.ScheduleTagSuspend),
 					Value: aws.String(event.UnsuspendDatetime),
@@ -102,9 +102,9 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 	return fmt.Sprintf("unable to find %s tag for instance %s", conf.ScheduleTag, event.InstanceID), nil
 }
 
-func createTags(ctx context.Context, client *ec2.Client, instanceID string, tags []*types.Tag) error {
+func createTags(ctx context.Context, client *ec2.Client, instanceID string, tags []types.Tag) error {
 	_, err := client.CreateTags(ctx, &ec2.CreateTagsInput{
-		Resources: []*string{aws.String(instanceID)},
+		Resources: []string{instanceID},
 		Tags:      tags,
 	})
 	if err != nil {
