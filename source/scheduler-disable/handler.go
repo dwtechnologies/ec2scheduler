@@ -43,7 +43,7 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 		return "", err
 	}
 
-	cfg, err := config.LoadDefaultConfig()
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return "", err
 	}
@@ -67,7 +67,7 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 			}
 
 			// disable scheduler
-			err := createTags(ctx, client, event.InstanceID, []*types.Tag{
+			err := createTags(ctx, client, event.InstanceID, []types.Tag{
 				{
 					Key:   aws.String(conf.ScheduleTag),
 					Value: aws.String(fmt.Sprintf("#%s", conf.ScheduleTag)),
@@ -84,9 +84,9 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 	return fmt.Sprintf("instance scheduler for %s disabled", event.InstanceID), nil
 }
 
-func createTags(ctx context.Context, client ec2ClientAPI, instanceID string, tags []*types.Tag) error {
+func createTags(ctx context.Context, client ec2ClientAPI, instanceID string, tags []types.Tag) error {
 	_, err := client.CreateTags(ctx, &ec2.CreateTagsInput{
-		Resources: []*string{aws.String(instanceID)},
+		Resources: []string{instanceID},
 		Tags:      tags,
 	})
 	if err != nil {
@@ -98,7 +98,7 @@ func createTags(ctx context.Context, client ec2ClientAPI, instanceID string, tag
 
 func describeInstances(ctx context.Context, client ec2ClientAPI, instanceID string) (*ec2.DescribeInstancesOutput, error) {
 	resp, err := client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
-		InstanceIds: []*string{aws.String(instanceID)},
+		InstanceIds: []string{instanceID},
 	})
 	if err != nil {
 		return nil, err

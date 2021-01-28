@@ -21,7 +21,7 @@ const instanceID = "i-07d023c826d243165"
 
 func (m *mockEC2client) DescribeInstances(ctx context.Context, params *ec2.DescribeInstancesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeInstancesOutput, error) {
 	return &ec2.DescribeInstancesOutput{
-		Reservations: []*types.Reservation{},
+		Reservations: []types.Reservation{},
 	}, m.err
 }
 
@@ -56,7 +56,7 @@ func TestDisableScheduler(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			err := createTags(context.Background(), test.client, test.instanceID, []*types.Tag{{Key: aws.String("Schedule"), Value: aws.String(test.scheduleTag)}})
+			err := createTags(context.Background(), test.client, test.instanceID, []types.Tag{{Key: aws.String("Schedule"), Value: aws.String(test.scheduleTag)}})
 
 			if test.err {
 				assert.Error(t, err)

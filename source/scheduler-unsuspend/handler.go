@@ -34,14 +34,14 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 		return "", err
 	}
 
-	cfg, err := config.LoadDefaultConfig()
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return "", err
 	}
 	client := ec2.NewFromConfig(cfg)
 
 	resp, err := client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
-		InstanceIds: []*string{aws.String(event.InstanceID)},
+		InstanceIds: []string{event.InstanceID},
 	})
 	if err != nil {
 		return "", err
@@ -64,7 +64,7 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 
 		// uncomment scheduleTag
 		if *tag.Key == conf.ScheduleTag {
-			err := createTags(ctx, client, event.InstanceID, []*types.Tag{
+			err := createTags(ctx, client, event.InstanceID, []types.Tag{
 				{
 					Key:   aws.String(conf.ScheduleTag),
 					Value: aws.String(strings.Replace(*tag.Value, "#", "", -1)),
@@ -83,8 +83,8 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 
 func deleteSuspendTag(ctx context.Context, client *ec2.Client, tag, instanceID string) error {
 	_, err := client.DeleteTags(ctx, &ec2.DeleteTagsInput{
-		Resources: []*string{aws.String(instanceID)},
-		Tags: []*types.Tag{
+		Resources: []string{instanceID},
+		Tags: []types.Tag{
 			{
 				Key: aws.String(tag),
 			},
@@ -97,9 +97,9 @@ func deleteSuspendTag(ctx context.Context, client *ec2.Client, tag, instanceID s
 	return nil
 }
 
-func createTags(ctx context.Context, client *ec2.Client, instanceID string, tags []*types.Tag) error {
+func createTags(ctx context.Context, client *ec2.Client, instanceID string, tags []types.Tag) error {
 	_, err := client.CreateTags(ctx, &ec2.CreateTagsInput{
-		Resources: []*string{aws.String(instanceID)},
+		Resources: []string{instanceID},
 		Tags:      tags,
 	})
 	if err != nil {

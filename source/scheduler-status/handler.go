@@ -63,25 +63,25 @@ func handler(ctx context.Context, event inputEvent) (string, error) {
 		return "", err
 	}
 
-	cfg, err := config.LoadDefaultConfig()
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		return "", err
 	}
 	client := ec2.NewFromConfig(cfg)
 
 	resp, err := client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
-		Filters: []*types.Filter{
+		Filters: []types.Filter{
 			{
 				Name:   aws.String("instance-state-name"),
-				Values: []*string{aws.String("running"), aws.String("stopped")},
+				Values: []string{"running", "stopped"},
 			},
 			{
 				Name:   aws.String("tag-key"),
-				Values: []*string{aws.String(conf.ScheduleTag)},
+				Values: []string{conf.ScheduleTag},
 			},
 			{
 				Name:   aws.String("tag:Name"),
-				Values: []*string{aws.String(fmt.Sprintf("*%s*", event.Filter))},
+				Values: []string{fmt.Sprintf("*%s*", event.Filter)},
 			},
 		},
 	})
